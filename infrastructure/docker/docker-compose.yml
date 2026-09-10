@@ -1,0 +1,104 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: ai_suite_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../frontend/public:/var/www/frontend/public:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ai_suite_network
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../infrastructure/docker/Dockerfile.backend
+    container_name: ai_suite_backend
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ai_suite
+      DB_USERNAME: ai_user
+      DB_PASSWORD: ai_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+    volumes:
+      - ../backend:/var/www/backend
+    networks:
+      - ai_suite_network
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../infrastructure/docker/Dockerfile.frontend
+    container_name: ai_suite_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost/api/v1
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    networks:
+      - ai_suite_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: ai_suite_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ai_suite
+      MYSQL_USER: ai_user
+      MYSQL_PASSWORD: ai_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ai_suite_network
+
+  redis:
+    image: redis:alpine
+    container_name: ai_suite_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ai_suite_network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ai_suite_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - ai_suite_network
+
+volumes:
+  mysql_data:
+  redis_data:
+  qdrant_data:
+
+networks:
+  ai_suite_network:
+    driver: bridge

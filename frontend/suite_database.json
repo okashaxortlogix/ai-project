@@ -1,0 +1,929 @@
+{
+  "organizations": [
+    {
+      "id": "org-acme-1",
+      "name": "Acme Store",
+      "slug": "acme-store",
+      "timezone": "UTC-05:00 (Eastern Time US & Canada)",
+      "settings": {
+        "support_enabled": true,
+        "sales_enabled": true,
+        "appointment_enabled": true
+      },
+      "created_at": "2026-09-10T21:42:40.477Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "usr-1",
+      "organization_id": "org-acme-1",
+      "name": "John Doe",
+      "email": "john@acme.com",
+      "role": "Admin",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "usr-2",
+      "organization_id": "org-acme-1",
+      "name": "Sarah Wilson",
+      "email": "sarah@acme.com",
+      "role": "Manager",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "usr-3",
+      "organization_id": "org-acme-1",
+      "name": "Mike Johnson",
+      "email": "mike@acme.com",
+      "role": "Agent",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "usr-4",
+      "organization_id": "org-acme-1",
+      "name": "Emily Davis",
+      "email": "emily@acme.com",
+      "role": "Agent",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    }
+  ],
+  "customers": [
+    {
+      "id": "cust-1",
+      "organization_id": "org-acme-1",
+      "name": "Sarah Johnson",
+      "email": "sarah@company.com",
+      "phone": "+1 234 567 8901",
+      "source": "Website",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "online": true,
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "cust-2",
+      "organization_id": "org-acme-1",
+      "name": "Mike Wilson",
+      "email": "mike@company.com",
+      "phone": "+1 234 567 8902",
+      "source": "Facebook",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
+      "online": true,
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "cust-3",
+      "organization_id": "org-acme-1",
+      "name": "Emma Davis",
+      "email": "emma@company.com",
+      "phone": "+1 234 567 8903",
+      "source": "Google Ads",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "online": true,
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "cust-4",
+      "organization_id": "org-acme-1",
+      "name": "James Miller",
+      "email": "james@company.com",
+      "phone": "+1 234 567 8904",
+      "source": "Website",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
+      "online": false,
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "cust-5",
+      "organization_id": "org-acme-1",
+      "name": "Olivia Brown",
+      "email": "olivia@company.com",
+      "phone": "+1 234 567 8905",
+      "source": "Referral",
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80",
+      "online": true,
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "cust-6",
+      "organization_id": "org-acme-1",
+      "name": "Daniel Taylor",
+      "email": "daniel@company.com",
+      "phone": "+1 234 567 8906",
+      "source": "Website",
+      "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=120&q=80",
+      "online": false,
+      "created_at": "2026-09-10T21:42:40.477Z"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "conv-1",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-1",
+      "channel": "web",
+      "status": "active",
+      "assigned_agent": "sales",
+      "last_message": "Here are the top options that match your needs:\n\n1. MacBook Air M1 — $799 (Up to 18 hours battery, lightweight & powerful)\n2. Dell Inspiron 15 — $749 (10 hours battery, Intel Core i7, great value for money)\n\nWould you like me to add either of these to your cart or book a call with our specialist?",
+      "last_message_at": "02:55 AM",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "conv-2",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-2",
+      "channel": "web",
+      "status": "pending",
+      "assigned_agent": "support",
+      "last_message": "Let me check that for you. I found your order #12345. It's currently Out for Delivery and is expected to arrive Tomorrow, Apr 29, 2025.\n\nTracking Number: 1Z999AA1234567890",
+      "last_message_at": "02:55 AM",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "conv-3",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-3",
+      "channel": "web",
+      "status": "active",
+      "assigned_agent": "appointment",
+      "last_message": "Perfect! Your demo has been scheduled for tomorrow at 2:00 PM. Synced automatically with Google Calendar and Outlook. A confirmation email has been dispatched.",
+      "last_message_at": "02:55 AM",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "conv-4",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-4",
+      "channel": "web",
+      "status": "waiting_for_human",
+      "assigned_agent": "human",
+      "last_message": "I have prioritized your request and transferred this conversation to a live senior representative. Someone from our team will respond in this chat shortly.",
+      "last_message_at": "02:55 AM",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "conv-5",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-5",
+      "channel": "web",
+      "status": "pending",
+      "assigned_agent": "sales",
+      "last_message": "Do you have this product in stock?",
+      "last_message_at": "10:15 AM",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "conv-6",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-6",
+      "channel": "web",
+      "status": "active",
+      "assigned_agent": "support",
+      "last_message": "I need help with my account...",
+      "last_message_at": "9:02 AM",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m-1",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "I want to know about your premium plan.",
+      "timestamp": "10:24 AM"
+    },
+    {
+      "id": "m-2",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "sales",
+      "content": "Great! Our premium plan starts at $49/month, including all core features plus advanced analytics, priority support, and more. Would you like me to show you a detailed comparison?",
+      "timestamp": "10:25 AM"
+    },
+    {
+      "id": "m-3",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "Yes, please. Also, can you tell me if there is a discount for annual plans?",
+      "timestamp": "10:26 AM"
+    },
+    {
+      "id": "m-4",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "sales",
+      "content": "Sure! We offer a 20% discount on annual plans. Would you like me to send you the plan comparison and pricing details?",
+      "timestamp": "10:28 AM"
+    },
+    {
+      "id": "m-mw1",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-2",
+      "sender": "customer",
+      "content": "Where is my order #12345?",
+      "timestamp": "10:14 AM"
+    },
+    {
+      "id": "m-mw2",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-2",
+      "sender": "agent",
+      "agent_type": "support",
+      "content": "Let me check that for you. I found your order #12345. It's currently out for delivery and is expected to arrive tomorrow, Apr 29, 2025.\n\nYou can track it here:",
+      "timestamp": "10:15 AM"
+    },
+    {
+      "id": "m-mw3",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-2",
+      "sender": "customer",
+      "content": "Thank you!",
+      "timestamp": "10:17 AM"
+    },
+    {
+      "id": "m-ed1",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "customer",
+      "content": "I want to book a demo.",
+      "timestamp": "10:20 AM"
+    },
+    {
+      "id": "m-ed2",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "agent",
+      "agent_type": "appointment",
+      "content": "Sure! I would be happy to help you book a demo. What day works best for you?",
+      "timestamp": "10:21 AM"
+    },
+    {
+      "id": "m-ed3",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "customer",
+      "content": "Tomorrow works for me.",
+      "timestamp": "10:22 AM"
+    },
+    {
+      "id": "m-ed4",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "agent",
+      "agent_type": "appointment",
+      "content": "Here are the available slots for tomorrow:\n• 10:00 AM\n• 11:30 AM\n• 2:00 PM\n• 4:30 PM\nWhich one would you like to choose?",
+      "timestamp": "10:23 AM"
+    },
+    {
+      "id": "m-ed5",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "customer",
+      "content": "2:00 PM",
+      "timestamp": "10:24 AM"
+    },
+    {
+      "id": "m-ed6",
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "agent",
+      "agent_type": "appointment",
+      "content": "Perfect! Your demo is booked for tomorrow at 2:00 PM. You will receive a calendar invite shortly.",
+      "timestamp": "10:25 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "I am looking for a laptop under $800 with good battery life",
+      "id": "m-1789076601961",
+      "timestamp": "02:43 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "sales",
+      "content": "Here are the top options that match your needs:\n\n1. MacBook Air M1 — $799 (Up to 18 hours battery, lightweight & powerful)\n2. Dell Inspiron 15 — $749 (10 hours battery, Intel Core i7, great value for money)\n\nWould you like me to add either of these to your cart or book a call with our specialist?",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "get_products",
+          "result": [
+            {
+              "id": "macbook-air-m1",
+              "name": "MacBook Air M1",
+              "price": 799,
+              "battery": "18 hours",
+              "desc": "Lightweight & powerful for work and creative multitasking"
+            },
+            {
+              "id": "dell-inspiron-15",
+              "name": "Dell Inspiron 15",
+              "price": 749,
+              "battery": "10 hours",
+              "desc": "Intel Core i7, brilliant 15.6 inch display and great value"
+            }
+          ]
+        },
+        "groundedSource": "Product Catalog.pdf#section=specifications"
+      },
+      "id": "m-1789076601976",
+      "timestamp": "02:43 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-2",
+      "sender": "customer",
+      "content": "Where is my order #12345?",
+      "id": "m-1789077266664",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-2",
+      "sender": "agent",
+      "agent_type": "support",
+      "content": "Let me check that for you. I found your order #12345. It's currently Out for Delivery and is expected to arrive Tomorrow, Apr 29, 2025.\n\nTracking Number: 1Z999AA1234567890",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "get_order_status",
+          "result": {
+            "orderNumber": "#12345",
+            "status": "Out for Delivery",
+            "estimatedDelivery": "Tomorrow, Apr 29, 2025",
+            "carrier": "UPS Worldwide",
+            "trackingNumber": "1Z999AA1234567890",
+            "location": "San Francisco Distribution Center"
+          }
+        }
+      },
+      "id": "m-1789077266669",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "I need a budget laptop under  for work",
+      "id": "m-1789077266697",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "sales",
+      "content": "Here are the top options that match your needs:\n\n1. MacBook Air M1 — $799 (Up to 18 hours battery, lightweight & powerful)\n2. Dell Inspiron 15 — $749 (10 hours battery, Intel Core i7, great value for money)\n\nWould you like me to add either of these to your cart or book a call with our specialist?",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "get_products",
+          "result": [
+            {
+              "id": "macbook-air-m1",
+              "name": "MacBook Air M1",
+              "price": 799,
+              "battery": "18 hours",
+              "desc": "Lightweight & powerful for work and creative multitasking"
+            },
+            {
+              "id": "dell-inspiron-15",
+              "name": "Dell Inspiron 15",
+              "price": 749,
+              "battery": "10 hours",
+              "desc": "Intel Core i7, brilliant 15.6 inch display and great value"
+            }
+          ]
+        }
+      },
+      "id": "m-1789077266702",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "customer",
+      "content": "Can I book a demo call at 2:00 PM tomorrow?",
+      "id": "m-1789077266726",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "agent",
+      "agent_type": "appointment",
+      "content": "Perfect! Your demo has been scheduled for tomorrow at 2:00 PM. Synced automatically with Google Calendar and Outlook. A confirmation email has been dispatched.",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "create_appointment",
+          "result": {
+            "organization_id": "org-acme-1",
+            "customer_id": "cust-3",
+            "title": "Demo Call",
+            "date": "Apr 29, 2025",
+            "time": "2:00 PM - 30m",
+            "customer_name": "Emma Davis",
+            "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+            "service": "Enterprise Demo",
+            "provider": "Google Calendar",
+            "status": "Confirmed",
+            "id": "apt-1789077266729",
+            "created_at": "2026-09-10T21:54:26.729Z"
+          }
+        }
+      },
+      "id": "m-1789077266731",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-4",
+      "sender": "customer",
+      "content": "I demand to talk to a human manager right now",
+      "id": "m-1789077266785",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-4",
+      "sender": "agent",
+      "agent_type": "human",
+      "content": "I have prioritized your request and transferred this conversation to a live senior representative. Someone from our team will respond in this chat shortly.",
+      "metadata": {},
+      "id": "m-1789077266790",
+      "timestamp": "02:54 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-2",
+      "sender": "customer",
+      "content": "Where is my order #12345?",
+      "id": "m-1789077306091",
+      "timestamp": "02:55 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-2",
+      "sender": "agent",
+      "agent_type": "support",
+      "content": "Let me check that for you. I found your order #12345. It's currently Out for Delivery and is expected to arrive Tomorrow, Apr 29, 2025.\n\nTracking Number: 1Z999AA1234567890",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "get_order_status",
+          "result": {
+            "orderNumber": "#12345",
+            "status": "Out for Delivery",
+            "estimatedDelivery": "Tomorrow, Apr 29, 2025",
+            "carrier": "UPS Worldwide",
+            "trackingNumber": "1Z999AA1234567890",
+            "location": "San Francisco Distribution Center"
+          }
+        }
+      },
+      "id": "m-1789077306094",
+      "timestamp": "02:55 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "I need a budget laptop under  for work",
+      "id": "m-1789077306129",
+      "timestamp": "02:55 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "sales",
+      "content": "Here are the top options that match your needs:\n\n1. MacBook Air M1 — $799 (Up to 18 hours battery, lightweight & powerful)\n2. Dell Inspiron 15 — $749 (10 hours battery, Intel Core i7, great value for money)\n\nWould you like me to add either of these to your cart or book a call with our specialist?",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "get_products",
+          "result": [
+            {
+              "id": "macbook-air-m1",
+              "name": "MacBook Air M1",
+              "price": 799,
+              "battery": "18 hours",
+              "desc": "Lightweight & powerful for work and creative multitasking"
+            },
+            {
+              "id": "dell-inspiron-15",
+              "name": "Dell Inspiron 15",
+              "price": 749,
+              "battery": "10 hours",
+              "desc": "Intel Core i7, brilliant 15.6 inch display and great value"
+            }
+          ]
+        }
+      },
+      "id": "m-1789077306133",
+      "timestamp": "02:55 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "customer",
+      "content": "Can I book a demo call at 2:00 PM tomorrow?",
+      "id": "m-1789077306175",
+      "timestamp": "02:55 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-3",
+      "sender": "agent",
+      "agent_type": "appointment",
+      "content": "Perfect! Your demo has been scheduled for tomorrow at 2:00 PM. Synced automatically with Google Calendar and Outlook. A confirmation email has been dispatched.",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "create_appointment",
+          "result": {
+            "organization_id": "org-acme-1",
+            "customer_id": "cust-3",
+            "title": "Demo Call",
+            "date": "Apr 29, 2025",
+            "time": "2:00 PM - 30m",
+            "customer_name": "Emma Davis",
+            "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+            "service": "Enterprise Demo",
+            "provider": "Google Calendar",
+            "status": "Confirmed",
+            "id": "apt-1789077306178",
+            "created_at": "2026-09-10T21:55:06.178Z"
+          }
+        }
+      },
+      "id": "m-1789077306179",
+      "timestamp": "02:55 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-4",
+      "sender": "customer",
+      "content": "I demand to talk to a human manager right now",
+      "id": "m-1789077306216",
+      "timestamp": "02:55 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-4",
+      "sender": "agent",
+      "agent_type": "human",
+      "content": "I have prioritized your request and transferred this conversation to a live senior representative. Someone from our team will respond in this chat shortly.",
+      "metadata": {},
+      "id": "m-1789077306220",
+      "timestamp": "02:55 AM"
+    }
+  ],
+  "leads": [
+    {
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-1",
+      "name": "Sarah Johnson",
+      "email": "lead@company.com",
+      "phone": "+1 234 567 8900",
+      "source": "Website",
+      "status": "Qualified",
+      "score": 85,
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "notes": "Automated lead created by Sales Agent: Inquired: \"I need a budget laptop under  for work\"",
+      "id": "lead-1789077306132",
+      "created_at": "2026-09-10T21:55:06.132Z"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-1",
+      "name": "Sarah Johnson",
+      "email": "lead@company.com",
+      "phone": "+1 234 567 8900",
+      "source": "Website",
+      "status": "Qualified",
+      "score": 85,
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "notes": "Automated lead created by Sales Agent: Inquired: \"I need a budget laptop under  for work\"",
+      "id": "lead-1789077266700",
+      "created_at": "2026-09-10T21:54:26.700Z"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-1",
+      "name": "Sarah Johnson",
+      "email": "lead@company.com",
+      "phone": "+1 234 567 8900",
+      "source": "Website",
+      "status": "Qualified",
+      "score": 85,
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "notes": "Automated lead created by Sales Agent: Inquired: \"I am looking for a laptop under $800 with good battery life\"",
+      "id": "lead-1789076601974",
+      "created_at": "2026-09-10T21:43:21.974Z"
+    },
+    {
+      "id": "lead-1",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-1",
+      "name": "Sarah Johnson",
+      "email": "sarah@company.com",
+      "phone": "+1 234 567 8901",
+      "source": "Website",
+      "status": "Hot",
+      "score": 85,
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "company": "Acme Growth Labs",
+      "notes": "Interested in annual Enterprise license. Decision maker.",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "lead-2",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-2",
+      "name": "Mike Wilson",
+      "email": "mike@company.com",
+      "phone": "+1 234 567 8902",
+      "source": "Facebook",
+      "status": "Hot",
+      "score": 72,
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
+      "company": "Wilson & Co",
+      "notes": "Inquired about order tracking and e-commerce plugin.",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "lead-3",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-3",
+      "name": "Emma Davis",
+      "email": "emma@company.com",
+      "phone": "+1 234 567 8903",
+      "source": "Google Ads",
+      "status": "Qualified",
+      "score": 55,
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "company": "Davis Logistics",
+      "notes": "Booked demo call for Tuesday 2:00 PM.",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "lead-4",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-4",
+      "name": "James Miller",
+      "email": "james@company.com",
+      "phone": "+1 234 567 8904",
+      "source": "Website",
+      "status": "New",
+      "score": 32,
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
+      "company": "Miller Retail",
+      "notes": "First inquiry regarding bulk shipping rates.",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "lead-5",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-5",
+      "name": "Olivia Brown",
+      "email": "olivia@company.com",
+      "phone": "+1 234 567 8905",
+      "source": "Referral",
+      "status": "Qualified",
+      "score": 68,
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80",
+      "company": "Brown Creative Studio",
+      "notes": "Looking for 5-10 seat hardware bundles.",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    }
+  ],
+  "appointments": [
+    {
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-3",
+      "title": "Demo Call",
+      "date": "Apr 29, 2025",
+      "time": "2:00 PM - 30m",
+      "customer_name": "Emma Davis",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "service": "Enterprise Demo",
+      "provider": "Google Calendar",
+      "status": "Confirmed",
+      "id": "apt-1789077306178",
+      "created_at": "2026-09-10T21:55:06.178Z"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-3",
+      "title": "Demo Call",
+      "date": "Apr 29, 2025",
+      "time": "2:00 PM - 30m",
+      "customer_name": "Emma Davis",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "service": "Enterprise Demo",
+      "provider": "Google Calendar",
+      "status": "Confirmed",
+      "id": "apt-1789077266729",
+      "created_at": "2026-09-10T21:54:26.729Z"
+    },
+    {
+      "id": "apt-1",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-1",
+      "title": "Demo Call",
+      "date": "Apr 29, 2025",
+      "time": "2:00 PM - 2:30 PM",
+      "customer_name": "Sarah Johnson",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+      "service": "Enterprise Demo",
+      "provider": "Google Calendar",
+      "status": "Confirmed",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "apt-2",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-2",
+      "title": "Client Call",
+      "date": "Apr 29, 2025",
+      "time": "10:00 AM - 11:00 AM",
+      "customer_name": "Mike Wilson",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
+      "service": "Integration Review",
+      "provider": "Google Calendar",
+      "status": "Confirmed",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "apt-3",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-3",
+      "title": "Follow Up",
+      "date": "Apr 29, 2025",
+      "time": "4:30 PM - 5:00 PM",
+      "customer_name": "Emma Davis",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "service": "Service Onboarding",
+      "provider": "Outlook",
+      "status": "Confirmed",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "apt-4",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-4",
+      "title": "Team Meeting",
+      "date": "Apr 30, 2025",
+      "time": "11:00 AM - 12:00 PM",
+      "customer_name": "Internal Ops",
+      "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=120&q=80",
+      "service": "Pipeline Review",
+      "provider": "Google Calendar",
+      "status": "Confirmed",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "apt-5",
+      "organization_id": "org-acme-1",
+      "customer_id": "cust-5",
+      "title": "Product Demo",
+      "date": "May 02, 2025",
+      "time": "4:00 PM - 5:00 PM",
+      "customer_name": "James Miller",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
+      "service": "Product Showcase",
+      "provider": "Outlook",
+      "status": "Confirmed",
+      "created_at": "2026-09-10T21:42:40.477Z"
+    }
+  ],
+  "knowledge_documents": [
+    {
+      "id": "doc-1",
+      "organization_id": "org-acme-1",
+      "title": "Shipping Policy.pdf",
+      "type": "Policy",
+      "last_updated": "Apr 30, 2025",
+      "status": "Active",
+      "size": "1.4 MB",
+      "content": "Orders placed before 2:00 PM EST ship same day. Standard shipping takes 3-5 business days. Express shipping takes 24 hours. Real-time UPS tracking numbers are assigned once dispatched."
+    },
+    {
+      "id": "doc-2",
+      "organization_id": "org-acme-1",
+      "title": "Return Policy.pdf",
+      "type": "Policy",
+      "last_updated": "Apr 28, 2025",
+      "status": "Active",
+      "size": "840 KB",
+      "content": "We offer a 30-day hassle-free return window for all unblemished hardware and unopened software packages. Full refunds are processed within 48 hours of return receipt."
+    },
+    {
+      "id": "doc-3",
+      "organization_id": "org-acme-1",
+      "title": "Product Catalog.pdf",
+      "type": "Product",
+      "last_updated": "Apr 15, 2025",
+      "status": "Active",
+      "size": "12.8 MB",
+      "content": "MacBook Air M1 ($799) features an 8-core CPU, up to 18 hours battery life, Retina display. Dell Inspiron 15 ($749) features Intel Core i7, 16GB RAM, 512GB SSD with 10 hours battery life."
+    },
+    {
+      "id": "doc-4",
+      "organization_id": "org-acme-1",
+      "title": "Company FAQ.docx",
+      "type": "FAQ",
+      "last_updated": "Apr 12, 2025",
+      "status": "Active",
+      "size": "520 KB",
+      "content": "Demo appointments can be booked 7 days a week between 9:00 AM and 6:00 PM EST. Synced automatically with Google Calendar and Microsoft Outlook."
+    },
+    {
+      "id": "doc-5",
+      "organization_id": "org-acme-1",
+      "title": "Terms & Conditions.pdf",
+      "type": "Legal",
+      "last_updated": "Apr 10, 2025",
+      "status": "Active",
+      "size": "2.1 MB",
+      "content": "Multi-tenant enterprise service level agreement guarantees 99.99% monthly uptime and strict encryption-at-rest data privacy."
+    }
+  ],
+  "integrations": [
+    {
+      "id": "int-1",
+      "organization_id": "org-acme-1",
+      "provider": "google_calendar",
+      "name": "Google Calendar",
+      "category": "calendar",
+      "connected": true,
+      "icon": "calendar",
+      "status": "active",
+      "last_synced_at": "2026-09-10T21:42:40.477Z"
+    },
+    {
+      "id": "int-2",
+      "organization_id": "org-acme-1",
+      "provider": "shopify",
+      "name": "Shopify",
+      "category": "ecommerce",
+      "connected": false,
+      "icon": "shopping-bag",
+      "status": "disconnected"
+    },
+    {
+      "id": "int-3",
+      "organization_id": "org-acme-1",
+      "provider": "woocommerce",
+      "name": "WooCommerce",
+      "category": "ecommerce",
+      "connected": false,
+      "icon": "store",
+      "status": "disconnected"
+    },
+    {
+      "id": "int-4",
+      "organization_id": "org-acme-1",
+      "provider": "hubspot",
+      "name": "HubSpot",
+      "category": "crm",
+      "connected": false,
+      "icon": "database",
+      "status": "disconnected"
+    },
+    {
+      "id": "int-5",
+      "organization_id": "org-acme-1",
+      "provider": "whatsapp",
+      "name": "WhatsApp",
+      "category": "messaging",
+      "connected": false,
+      "icon": "message-circle",
+      "status": "disconnected"
+    },
+    {
+      "id": "int-6",
+      "organization_id": "org-acme-1",
+      "provider": "twilio",
+      "name": "SMS (Twilio)",
+      "category": "messaging",
+      "connected": false,
+      "icon": "phone",
+      "status": "disconnected"
+    },
+    {
+      "id": "int-7",
+      "organization_id": "org-acme-1",
+      "provider": "outlook",
+      "name": "Outlook",
+      "category": "calendar",
+      "connected": false,
+      "icon": "mail",
+      "status": "disconnected"
+    }
+  ]
+}
