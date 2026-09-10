@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Database } from "@/lib/db";
+import { SecurityGuard } from "@/lib/security";
 
 export async function GET(
   request: Request,
@@ -57,6 +58,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userRole = request.headers.get("x-user-role") || "Admin";
+    const perm = SecurityGuard.checkPermission(userRole, "delete", "knowledge");
+    if (!perm.allowed) {
+      return NextResponse.json(
+        { success: false, message: perm.message },
+        { status: perm.statusCode }
+      );
+    }
+
     const { id } = await params;
     const org = Database.getOrganizations()[0];
 

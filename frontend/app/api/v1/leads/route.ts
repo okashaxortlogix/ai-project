@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Database } from "@/lib/db";
+import { SecurityGuard } from "@/lib/security";
 
 export async function GET(request: Request) {
   const org = Database.getOrganizations()[0];
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     success: true,
-    data: filtered,
+    data: SecurityGuard.sanitizeOutput(filtered),
     meta: {
       total: filtered.length,
       organization_id: org.id
@@ -35,6 +36,24 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const userRole = request.headers.get("x-user-role") || "Admin";
+    const perm = SecurityGuard.checkPermission(userRole, "write", "lead");
+    if (!perm.allowed) {
+      return NextResponse.json(
+        { success: false, message: perm.message },
+        { status: perm.statusCode }
+      );
+    }
+
+    const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rate = SecurityGuard.rateLimit(ip, 60);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { success: false, message: "Rate limit exceeded. Try again in 60s." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const org = Database.getOrganizations()[0];
 
@@ -54,7 +73,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      data: newLead
+      data: SecurityGuard.sanitizeOutput(newLead)
     });
   } catch (error: any) {
     return NextResponse.json(

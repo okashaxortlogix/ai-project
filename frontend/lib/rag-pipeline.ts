@@ -30,6 +30,46 @@ export class RagPipeline {
   private static openaiKey = process.env.OPENAI_API_KEY || "";
 
   /**
+   * Multi-format Document Text Extractor
+   * Parses TXT, Markdown, simulated PDF byte streams, and DOCX XML bodies into clean text.
+   */
+  static extractDocumentText(filename: string, rawContent: string): string {
+    const ext = filename.toLowerCase().split(".").pop() || "";
+
+    switch (ext) {
+      case "pdf": {
+        // If rawContent contains PDF stream markers, extract embedded stream text
+        if (rawContent.includes("stream") || rawContent.includes("%PDF")) {
+          const textMatches = rawContent.match(/\(([^)]+)\)|BT[\s\S]*?ET/g);
+          if (textMatches && textMatches.length > 0) {
+            return textMatches
+              .map((m) => m.replace(/[\(\)BTET]/g, "").trim())
+              .filter((t) => t.length > 0)
+              .join(" ");
+          }
+        }
+        return rawContent.replace(/%PDF-[\d\.]+/g, "").trim();
+      }
+
+      case "docx": {
+        // If rawContent contains Word XML tags (<w:t>), extract inner node text
+        if (rawContent.includes("<w:t") || rawContent.includes("<w:p")) {
+          const xmlMatches = rawContent.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+          if (xmlMatches && xmlMatches.length > 0) {
+            return xmlMatches.map((x) => x.replace(/<\/?w:t[^>]*>/g, "")).join(" ");
+          }
+        }
+        return rawContent.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      }
+
+      case "txt":
+      case "md":
+      default:
+        return rawContent.replace(/\r\n/g, "\n").trim();
+    }
+  }
+
+  /**
    * Split document text into overlapping chunks using sliding window (default 380 chars, 80 overlap)
    */
   static chunkDocument(
@@ -39,7 +79,8 @@ export class RagPipeline {
     chunkSize: number = 380,
     overlap: number = 80
   ): RagChunk[] {
-    const cleanText = text.replace(/\r\n/g, "\n").trim();
+    const parsedText = this.extractDocumentText(docTitle, text);
+    const cleanText = parsedText.replace(/\r\n/g, "\n").trim();
     if (cleanText.length <= chunkSize) {
       return [
         {
