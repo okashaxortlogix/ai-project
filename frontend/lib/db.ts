@@ -110,6 +110,7 @@ export interface DBIntegration {
   icon: string;
   status: 'active' | 'disconnected';
   last_synced_at?: string;
+  credentials?: Record<string, any>;
 }
 
 export interface DBSchema {

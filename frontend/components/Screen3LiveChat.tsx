@@ -25,7 +25,8 @@ import {
   Check,
   ChevronDown,
   Trash2,
-  Download
+  Download,
+  ChevronLeft
 } from "lucide-react";
 import Modal from "./ui/Modal";
 import Button from "./ui/Button";
@@ -76,6 +77,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [mobilePane, setMobilePane] = useState<"list" | "chat">("list");
 
   // New Chat Form
   const [newChatName, setNewChatName] = useState("");
@@ -602,10 +604,8 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
       {/* Main 2-Column Split: Left Compact List (3 Cols) + Right Professional Chat Workspace (9 Cols) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 overflow-hidden min-h-0">
         
-        {/* ========================================================================= */}
-        {/* LEFT COLUMN: Compact Conversation Inbox List (3 Cols - Reduced Space)     */}
-        {/* ========================================================================= */}
-        <div className="lg:col-span-3 xl:col-span-3 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden">
+        {/* LEFT COLUMN: Compact Conversation Inbox List */}
+        <div className={`lg:col-span-3 xl:col-span-3 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden ${mobilePane === "chat" ? "hidden lg:flex" : "flex"}`}>
           {/* Top Filter Tabs & Search */}
           <div className="p-2.5 border-b border-slate-100 space-y-2 bg-slate-50/40 shrink-0">
             {/* Filter Pills */}
@@ -658,7 +658,10 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                 return (
                   <div
                     key={conv.id}
-                    onClick={() => setSelectedId(conv.id)}
+                    onClick={() => {
+                      setSelectedId(conv.id);
+                      setMobilePane("chat");
+                    }}
                     className={`p-3 flex items-start justify-between gap-2 cursor-pointer transition-all border-l-4 group relative ${
                       isSelected
                         ? "bg-blue-50/70 border-l-blue-600 shadow-2xs"
@@ -727,16 +730,22 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
           </div>
         </div>
 
-        {/* ========================================================================================= */}
-        {/* RIGHT COLUMN: Professional Conversation Workspace (9 Cols - Increased Space & Real Chat) */}
-        {/* ========================================================================================= */}
-        <div className="lg:col-span-9 xl:col-span-9 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden">
+        {/* RIGHT COLUMN: Professional Conversation Workspace */}
+        <div className={`lg:col-span-9 xl:col-span-9 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden ${mobilePane === "list" ? "hidden lg:flex" : "flex"}`}>
           {selectedConv ? (
             <>
               {/* 1. Professional Chat Header */}
-              <div className="px-5 py-3.5 border-b border-slate-200/80 flex items-center justify-between bg-white shrink-0">
-                {/* Left: Customer Info */}
-                <div className="flex items-center gap-3">
+              <div className="px-3 sm:px-5 py-3.5 border-b border-slate-200/80 flex items-center justify-between bg-white shrink-0">
+                {/* Left: Customer Info with Mobile Back Button */}
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMobilePane("list")}
+                    className="lg:hidden p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer mr-0.5"
+                    title="Back to inbox"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
                   <div className="relative">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center text-sm font-bold shadow-xs">
                       {selectedConv.customer.charAt(0)}

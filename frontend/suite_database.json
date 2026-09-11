@@ -126,9 +126,9 @@
       "customer_id": "cust-1",
       "channel": "web",
       "status": "waiting_for_human",
-      "assigned_agent": "human",
-      "last_message": "Conversation handed off to human support queue.",
-      "last_message_at": "01:21 AM",
+      "assigned_agent": "support",
+      "last_message": "I'm here to help with any orders, shipping questions, or return requests. Could you provide your order number or specific question?",
+      "last_message_at": "01:35 AM",
       "created_at": "2026-09-11T18:53:23.652Z"
     },
     {
@@ -933,6 +933,24 @@
       "content": "Conversation handed off to human support queue.",
       "id": "m-1789158062680",
       "timestamp": "01:21 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-support-sandbox",
+      "sender": "agent",
+      "content": "hi",
+      "id": "m-1789158933368",
+      "timestamp": "01:35 AM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-support-sandbox",
+      "sender": "agent",
+      "agent_type": "support",
+      "content": "I'm here to help with any orders, shipping questions, or return requests. Could you provide your order number or specific question?",
+      "metadata": {},
+      "id": "m-1789158933374",
+      "timestamp": "01:35 AM"
     }
   ],
   "leads": [
@@ -1294,6 +1312,20 @@
   ],
   "knowledge_documents": [
     {
+      "id": "doc-1789159188229",
+      "organization_id": "org-default",
+      "title": "Store Shipping Policy (Web Page)",
+      "type": "Web Scraped",
+      "agent": "Support Agent",
+      "chunks": 2,
+      "chunks_count": 2,
+      "status": "Indexed",
+      "source_url": "https://shop.example.com/policies/shipping",
+      "content": "Content extracted from https://shop.example.com/policies/shipping:\nStandard return policy allows customers 30 days from delivery to request a refund or exchange. Items must be in original unworn condition with tags attached. Domestic shipping takes 2-4 business days via FedEx Express. Free delivery on all orders over $75. International shipping delivers within 7-10 business days. For cancellations, customers can modify orders within 2 hours of checkout.",
+      "last_updated": "Sep 12, 2026",
+      "created_at": "2026-09-11T20:39:48.225Z"
+    },
+    {
       "id": "doc-1",
       "organization_id": "org-acme-1",
       "title": "Shipping Policy.pdf",
@@ -1362,9 +1394,14 @@
       "provider": "shopify",
       "name": "Shopify",
       "category": "ecommerce",
-      "connected": false,
+      "connected": true,
       "icon": "shopping-bag",
-      "status": "disconnected"
+      "status": "active",
+      "credentials": {
+        "storeDomain": "acme.myshopify.com",
+        "accessToken": "shpat_998877665544332211"
+      },
+      "last_synced_at": "2026-09-11T20:39:54.510Z"
     },
     {
       "id": "int-3",

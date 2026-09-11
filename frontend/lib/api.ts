@@ -250,6 +250,15 @@ export const api = {
     return res.json();
   },
 
+  async scrapeKnowledgeUrl(data: { url: string; title?: string; agent?: string }) {
+    const res = await fetch(`${API_BASE}/knowledge/scrape`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
   // Integrations
   async getIntegrations() {
     const res = await fetch(`${API_BASE}/integrations`, {
@@ -268,10 +277,10 @@ export const api = {
   },
 
   async testIntegration(provider: string, credentials?: any) {
-    const res = await fetch(`${API_BASE}/integrations/${provider}/connect`, {
+    const res = await fetch(`${API_BASE}/integrations/test`, {
       method: "POST",
       headers: getHeaders(),
-      body: JSON.stringify({ testOnly: true, ...(credentials || {}) })
+      body: JSON.stringify({ provider, credentials: credentials || {} })
     });
     return res.json();
   },

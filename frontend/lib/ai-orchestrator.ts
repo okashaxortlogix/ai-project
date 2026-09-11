@@ -174,6 +174,27 @@ export class AiOrchestrator {
 
         return localApt;
       }
+      case "cancel_order": {
+        const orderNum = params.orderNumber || "#12345";
+        return {
+          orderNumber: orderNum,
+          status: "Cancelled",
+          refundIssued: true,
+          refundAmount: "$149.00",
+          message: `Order ${orderNum} has been officially cancelled in Shopify. A full refund of $149.00 has been initiated to the original payment method.`
+        };
+      }
+      case "update_shipping_address": {
+        const orderNum = params.orderNumber || "#12345";
+        const newAddress = params.newAddress || "Updated Office Address";
+        return {
+          orderNumber: orderNum,
+          status: "Rerouted",
+          newAddress,
+          carrierNotified: true,
+          message: `Shipping destination for order ${orderNum} has been updated to: ${newAddress}. Carrier dispatch notification sent.`
+        };
+      }
       case "handoff_to_human": {
         try {
           if (typeof fetch !== "undefined") {
@@ -385,8 +406,19 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
     // Deterministic High-Fidelity Local Orchestration Engine
     switch (intent.agentType) {
       case "support": {
-        if (lower.includes("address") || lower.includes("office") || lower.includes("change location") || lower.includes("redirect")) {
-          reply = `Yes, you can certainly change your delivery address to your office! As long as the package has not left the regional carrier distribution hub, we can redirect it.
+        const isUrdu = /\b(kya|hai|hein|batao|kaise|krna|shukriya|kuch|chahiye|mein|nhi|nahi|kr|rahe|hoga)\b/i.test(userMessage);
+
+        if (lower.includes("cancel")) {
+          const orderNum = intent.extractedEntities.orderNumber || "#12345";
+          const cancelData = await this.executeTool(orgId, "cancel_order", { orderNumber: orderNum }, conversationId, customerId);
+          toolResult = { toolName: "cancel_order", result: cancelData };
+          reply = isUrdu
+            ? `✅ **Order ${orderNum} Cancel Ho Chuka Hai**\n\n${cancelData.message}\n\nAap ka $149.00 ka refund 3-5 business days mein aap ke payment card par wapis mil jaye ga.`
+            : `✅ **Order ${orderNum} Successfully Cancelled**\n\n${cancelData.message}\n\n• **Status**: Cancelled & Voided in Shopify\n• **Refund Processed**: $149.00 initiated\n• **Confirmation**: Sent to your registered email.`;
+        } else if (lower.includes("address") || lower.includes("office") || lower.includes("change location") || lower.includes("redirect")) {
+          reply = isUrdu
+            ? `Ji bilkul! Aap apna delivery address office par tabdeel kr sakty hen. Barah-e-karam apna mukammal office address provide karein ta ke main FedEx Express (#FDX-994821) par reroute request bhej sakoon.`
+            : `Yes, you can certainly change your delivery address to your office! As long as the package has not left the regional carrier distribution hub, we can redirect it.
 
 Please provide your office address:
 • Company Name & Floor/Suite #
@@ -398,13 +430,19 @@ Once provided, I will submit an immediate carrier reroute request for order #123
           const orderNum = intent.extractedEntities.orderNumber || "#12345";
           const orderData = await this.executeTool(orgId, "get_order_status", { orderNumber: orderNum }, conversationId, customerId);
           toolResult = { toolName: "get_order_status", result: orderData };
-          reply = `Let me check that for you! I found your order ${orderData.orderNumber}. It's currently ${orderData.status} and is expected to arrive ${orderData.estimatedDelivery} via ${orderData.carrier}.\n\nTracking Number: **${orderData.trackingNumber}**\nHub: ${orderData.location}`;
+          reply = isUrdu
+            ? `Main ne aap ka order ${orderData.orderNumber} check kr liya hai! Ye abhi **${orderData.status}** hai aur kal (${orderData.estimatedDelivery}) tak deliver ho jaye ga.\n\nTracking Number: **${orderData.trackingNumber}** (${orderData.carrier})`
+            : `Let me check that for you! I found your order ${orderData.orderNumber}. It's currently ${orderData.status} and is expected to arrive ${orderData.estimatedDelivery} via ${orderData.carrier}.\n\nTracking Number: **${orderData.trackingNumber}**\nHub: ${orderData.location}`;
         } else if (lower.includes("return") || lower.includes("refund") || lower.includes("exchange")) {
-          reply = `Our return policy provides a **30-day hassle-free return window** on all hardware and unopened items. Full refunds are processed within 48 hours of return delivery, and we provide prepaid return shipping labels.\n\nWould you like me to initiate a return label for an order?`;
+          reply = isUrdu
+            ? `Hamari return policy ke mutabiq aap ko **30-day hassle-free return window** milti hai. Item return pohanchte hi 48 ghanton mein full refund process ho jata hai aur prepaid return shipping label provide kiya jata hai.`
+            : `Our return policy provides a **30-day hassle-free return window** on all hardware and unopened items. Full refunds are processed within 48 hours of return delivery, and we provide prepaid return shipping labels.\n\nWould you like me to initiate a return label for an order?`;
         } else if (ragResult.match) {
           reply = `According to our approved ${ragResult.source}:\n\n"${ragResult.chunk}"\n\nPlease let me know if you would like me to assist you with any next steps!`;
         } else {
-          reply = "I'm here to help with any orders, shipping questions, or return requests. Could you provide your order number or specific question?";
+          reply = isUrdu
+            ? `Main aap ki order tracking, shipping aur returns ke baray mein mukammal madad kr sakta hoon. Barah-e-karam apna order number ya sawal share karein!`
+            : "I'm here to help with any orders, shipping questions, or return requests. Could you provide your order number or specific question?";
         }
         break;
       }

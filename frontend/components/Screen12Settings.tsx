@@ -16,7 +16,12 @@ import {
   Cpu,
   Check,
   Edit2,
-  AlertCircle
+  AlertCircle,
+  Key,
+  MessageSquare,
+  Globe,
+  Activity,
+  Zap
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -38,7 +43,22 @@ interface TeamMember {
 }
 
 export default function Screen12Settings({ onNavigate, isCompact = false }: Screen12SettingsProps) {
-  const [activeTab, setActiveTab] = useState<"General" | "Model" | "Notifications" | "Appearance" | "Team" | "WhiteLabel">("General");
+  const [activeTab, setActiveTab] = useState<"General" | "Persona" | "ApiKeys" | "Model" | "Notifications" | "Appearance" | "Team" | "WhiteLabel">("General");
+
+  // Persona & Brand Rules state
+  const [brandVoice, setBrandVoice] = useState("Professional & Solutions-Oriented");
+  const [languageMode, setLanguageMode] = useState("Roman Urdu & English Bilingual");
+  const [maxDiscountPercent, setMaxDiscountPercent] = useState(15);
+  const [systemInstructions, setSystemInstructions] = useState(
+    "Always greet warmly. Never reveal internal operational margins. If customer asks in Roman Urdu, reply politely in Roman Urdu. Maximum automated discount allowed is 15%."
+  );
+
+  // BYOK & API Keys state
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [escalationWebhookUrl, setEscalationWebhookUrl] = useState("https://hooks.slack.com/services/T00/B00/X00");
+  const [messagesUsed, setMessagesUsed] = useState(1420);
+  const [messagesLimit, setMessagesLimit] = useState(5000);
 
   // White-label state
   const [agencyName, setAgencyName] = useState("Acme Digital Agency");
@@ -162,14 +182,16 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-slate-200">
+      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto no-scrollbar">
         {[
           { id: "General", label: "General", icon: Settings },
+          { id: "Persona", label: "Brand Persona & Rules", icon: Bot },
+          { id: "ApiKeys", label: "API Keys & BYOK", icon: Key },
           { id: "Model", label: "Model", icon: Cpu },
           { id: "Notifications", label: "Notifications", icon: Bell },
           { id: "Appearance", label: "Appearance", icon: Palette },
           { id: "Team", label: "Team", icon: Users },
-          { id: "WhiteLabel", label: "White-Label & Branding", icon: Sparkles }
+          { id: "WhiteLabel", label: "White-Label", icon: Sparkles }
         ].map((t) => {
           const Icon = t.icon;
           const isActive = activeTab === t.id;
@@ -299,6 +321,250 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
               >
                 Reset Settings
               </Button>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: PERSONA & BRAND RULES */}
+      {activeTab === "Persona" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl">
+          <div className="lg:col-span-8 space-y-4">
+            <Card className="p-6">
+              <h2 className="text-sm font-bold text-slate-900 mb-1">
+                Brand Persona & Autonomous AI Rules
+              </h2>
+              <p className="text-xs text-slate-500 mb-5">
+                Configure tone of voice, bilingual language adaptation, and discount safety guardrails.
+              </p>
+
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Brand Tone & Voice
+                  </label>
+                  <select
+                    value={brandVoice}
+                    onChange={(e) => setBrandVoice(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    <option value="Professional & Solutions-Oriented">Professional & Solutions-Oriented (Corporate & B2B)</option>
+                    <option value="Friendly, Empathetic & Casual">Friendly, Empathetic & Casual (D2C E-commerce & Fashion)</option>
+                    <option value="High-Ticket Luxury & Elegant">High-Ticket Luxury & Elegant (Premium Brands)</option>
+                    <option value="Concise & Ultra-Fast">Concise & Ultra-Fast (Technical Support & Logistics)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Language & Regional Adaptation
+                  </label>
+                  <select
+                    value={languageMode}
+                    onChange={(e) => setLanguageMode(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    <option value="Roman Urdu & English Bilingual">Roman Urdu & English Bilingual (Auto-switches to Roman Urdu)</option>
+                    <option value="Strictly English">Strictly English (United States standard)</option>
+                    <option value="Urdu Script">Urdu Script (اردو)</option>
+                    <option value="Multilingual Global">Multilingual Global (Auto-detects 40+ languages)</option>
+                  </select>
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    When a customer writes in Roman Urdu (e.g. &quot;mera order kahan hai&quot;), the AI will answer naturally in Roman Urdu.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Maximum Automated Promo / Discount Cap (%)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={40}
+                      step={1}
+                      value={maxDiscountPercent}
+                      onChange={(e) => setMaxDiscountPercent(parseInt(e.target.value, 10))}
+                      className="flex-1 accent-blue-600"
+                    />
+                    <span className="font-mono font-bold text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-200">
+                      {maxDiscountPercent}% Max
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Custom System Guidelines & Brand Rules
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={systemInstructions}
+                    onChange={(e) => setSystemInstructions(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg p-3 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed text-xs"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setSaveToast(true);
+                      setTimeout(() => setSaveToast(false), 2500);
+                    }}
+                  >
+                    Save Persona Configuration
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-4 space-y-4">
+            <Card className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/40 border-blue-100">
+              <h3 className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                <span>Live Persona Preview</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 mb-3">
+                Simulated response opening based on current tone and language settings:
+              </p>
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-xs text-slate-700 leading-relaxed">
+                {languageMode.includes("Roman Urdu") ? (
+                  <span>
+                    &quot;Assalam-o-Alaikum! Main aap ki order tracking aur shopping ke baray mein mukammal madad kr sakta hoon. Batayein main aaj aap ki kya madad karoon?&quot;
+                  </span>
+                ) : (
+                  <span>
+                    &quot;Hello! Welcome to our store. I am your autonomous AI specialist, ready to assist with order tracking, product recommendations, or warranty inquiries.&quot;
+                  </span>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: API KEYS & BYOK (BRING YOUR OWN KEY) */}
+      {activeTab === "ApiKeys" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl">
+          <div className="lg:col-span-8 space-y-4">
+            {/* AI Credits & Usage Meter */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">AI Message Consumption Meter</h2>
+                  <p className="text-xs text-slate-500">Monthly autonomous conversation allocation.</p>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Healthy Quota
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-slate-600">Messages Used:</span>
+                  <span className="font-mono text-slate-900">{messagesUsed.toLocaleString()} / {messagesLimit.toLocaleString()}</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-blue-600 h-full rounded-full transition-all"
+                    style={{ width: `${(messagesUsed / messagesLimit) * 100}%` }}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center pt-2">
+                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="text-[10px] text-slate-400">Support Chats</div>
+                    <div className="text-xs font-bold text-slate-800">812</div>
+                  </div>
+                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="text-[10px] text-slate-400">Sales Recommendations</div>
+                    <div className="text-xs font-bold text-slate-800">490</div>
+                  </div>
+                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="text-[10px] text-slate-400">Calendar Bookings</div>
+                    <div className="text-xs font-bold text-slate-800">118</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* BYOK Keys Card */}
+            <Card className="p-6">
+              <h2 className="text-sm font-bold text-slate-900 mb-1">
+                Bring Your Own Key (BYOK)
+              </h2>
+              <p className="text-xs text-slate-500 mb-5">
+                Supply your own OpenAI or Gemini API keys to route charges directly to your organizational billing.
+              </p>
+
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    OpenAI API Secret Key
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="sk-proj-••••••••••••••••••••••••••••••••"
+                    value={openaiApiKey}
+                    onChange={(e) => setOpenaiApiKey(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Google Gemini API Key
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="AIzaSy••••••••••••••••••••••••••••••••"
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Human Escalation Webhook URL (Slack / Discord / Zapier)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://hooks.slack.com/services/..."
+                    value={escalationWebhookUrl}
+                    onChange={(e) => setEscalationWebhookUrl(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Triggered whenever a customer requests human handoff or sentiment drops.
+                  </span>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setSaveToast(true);
+                      setTimeout(() => setSaveToast(false), 2500);
+                    }}
+                  >
+                    Save API Keys & Webhooks
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-4 space-y-4">
+            <Card className="p-5 border-slate-200">
+              <h3 className="text-xs font-bold text-slate-900 mb-2">Zero-Cost Fallback</h3>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                When external API keys are left blank, the suite automatically utilizes its integrated high-performance deterministic local orchestration engine with zero OpenAI costs.
+              </p>
             </Card>
           </div>
         </div>

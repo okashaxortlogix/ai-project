@@ -14,7 +14,11 @@ import {
   ExternalLink,
   Sliders,
   Sparkles,
-  Bot
+  Bot,
+  ShieldCheck,
+  Activity,
+  Zap,
+  AlertCircle
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +35,24 @@ export default function Screen10Integrations({ onNavigate, isCompact = false }: 
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState<"All" | "Connected" | "Available">("All");
   const [managingItem, setManagingItem] = useState<any | null>(null);
+
+  // Credential input states
+  const [credStoreDomain, setCredStoreDomain] = useState("nexa-demo-store.myshopify.com");
+  const [credAccessToken, setCredAccessToken] = useState("shpat_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6");
+  const [credWebhookSecret, setCredWebhookSecret] = useState("whsec_994821a884ef02bc44");
+  const [credStoreUrl, setCredStoreUrl] = useState("https://mystore.example.com");
+  const [credConsumerKey, setCredConsumerKey] = useState("ck_9a8b7c6d5e4f3a2b1c0d");
+  const [credConsumerSecret, setCredConsumerSecret] = useState("cs_1a2b3c4d5e6f7a8b9c0d");
+  const [credPhoneNumberId, setCredPhoneNumberId] = useState("108492049281742");
+  const [credWhatsAppToken, setCredWhatsAppToken] = useState("EAAGz0...meta_permanent_token");
+  const [credCalendarId, setCredCalendarId] = useState("sales-bookings@company.com");
+
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+    latencyMs?: number;
+  } | null>(null);
 
   const DEFAULT_CATALOG = [
     { id: "shopify", name: "Shopify Store", provider: "shopify", description: "Real-time order sync, catalog recommendations, and automated inventory balance.", icon: "shopify", connected: false },
@@ -66,8 +88,56 @@ export default function Screen10Integrations({ onNavigate, isCompact = false }: 
   };
 
   useEffect(() => {
-    loadIntegrations();
+    loadDocsAndIntegrations();
   }, []);
+
+  const loadDocsAndIntegrations = () => {
+    loadIntegrations();
+  };
+
+  const handleTestConnection = async () => {
+    if (!managingItem) return;
+    setIsTesting(true);
+    setTestResult(null);
+
+    let credentials: Record<string, any> = {};
+    if (managingItem.provider === "shopify") {
+      credentials = { storeDomain: credStoreDomain, accessToken: credAccessToken, webhookSecret: credWebhookSecret };
+    } else if (managingItem.provider === "woocommerce") {
+      credentials = { storeUrl: credStoreUrl, consumerKey: credConsumerKey, consumerSecret: credConsumerSecret };
+    } else if (managingItem.provider === "whatsapp") {
+      credentials = { phoneNumberId: credPhoneNumberId, accessToken: credWhatsAppToken };
+    } else if (managingItem.provider === "google_calendar") {
+      credentials = { calendarId: credCalendarId };
+    }
+
+    try {
+      const res = await api.testIntegration(managingItem.provider, credentials);
+      if (res && res.success) {
+        setTestResult({
+          success: true,
+          message: res.message || "Connection verified successfully!",
+          latencyMs: res.latencyMs || 84
+        });
+        setIntegrations((prev) =>
+          prev.map((i) => (i.provider === managingItem.provider ? { ...i, connected: true } : i))
+        );
+        setManagingItem((prev: any) => ({ ...prev, connected: true }));
+      } else {
+        setTestResult({
+          success: false,
+          message: res.error || "Failed to verify connection with remote server."
+        });
+      }
+    } catch (err: any) {
+      setTestResult({
+        success: false,
+        message: err.message || "Network timeout connecting to provider API."
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleToggle = async (provider: string) => {
     try {
@@ -198,61 +268,231 @@ export default function Screen10Integrations({ onNavigate, isCompact = false }: 
         ))}
       </div>
 
-      {/* Manage Integration Modal */}
+      {/* Manage Integration Modal with Real Credentials & Testing */}
       {managingItem && (
         <Modal
           isOpen={!!managingItem}
-          onClose={() => setManagingItem(null)}
-          title={`${managingItem.name} Integration`}
-          description="Configure synchronization parameters and webhook security."
+          onClose={() => {
+            setManagingItem(null);
+            setTestResult(null);
+          }}
+          title={`Configure ${managingItem.name}`}
+          description="Enter production API credentials to connect real-time sync with your store."
           size="md"
           footer={
             <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleTestConnection}
+                  disabled={isTesting}
+                  icon={Zap}
+                >
+                  {isTesting ? "Testing API..." : "Test Connection"}
+                </Button>
+                {managingItem.connected && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleToggle(managingItem.provider)}
+                  >
+                    Disconnect
+                  </Button>
+                )}
+              </div>
               <Button
-                variant={managingItem.connected ? "destructive" : "primary"}
+                variant="secondary"
                 size="sm"
-                onClick={() => handleToggle(managingItem.provider)}
+                onClick={() => {
+                  setManagingItem(null);
+                  setTestResult(null);
+                }}
               >
-                {managingItem.connected ? "Disconnect Service" : "Authorize & Connect"}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setManagingItem(null)}>
-                Close
+                Done
               </Button>
             </div>
           }
         >
           <div className="space-y-4 text-xs">
-            <div className="p-3 bg-slate-50 rounded-lg space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Service:</span>
-                <span className="font-semibold text-slate-900">{managingItem.name}</span>
+            {/* Status & Sync Info */}
+            <div className="p-3 bg-slate-50 rounded-lg space-y-2 border border-slate-100">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Service:</span>
+                <span className="font-bold text-slate-900">{managingItem.name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Status:</span>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Connection State:</span>
                 <StatusBadge
                   variant={managingItem.connected ? "connected" : "neutral"}
-                  label={managingItem.connected ? "Connected" : "Disconnected"}
+                  label={managingItem.connected ? "Live & Verified" : "Awaiting Credentials"}
                 />
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Webhook Endpoint:</span>
-                <span className="font-mono text-[10px] text-slate-700">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Inbound Webhook:</span>
+                <span className="font-mono text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
                   /api/v1/{managingItem.provider}/webhook
                 </span>
               </div>
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                API Token / Webhook Secret
-              </label>
-              <input
-                type="password"
-                defaultValue="••••••••••••••••••••••••••••••••"
-                readOnly
-                className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-500"
-              />
-            </div>
+            {/* Test Result Banner */}
+            {testResult && (
+              <div
+                className={`p-3 rounded-lg text-xs flex items-start gap-2 border ${
+                  testResult.success
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : "bg-rose-50 border-rose-200 text-rose-800"
+                }`}
+              >
+                {testResult.success ? (
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <div className="font-bold">
+                    {testResult.success ? "Connection Verified" : "Authentication Failed"}
+                    {testResult.latencyMs && (
+                      <span className="ml-2 font-mono text-[10px] bg-emerald-100/80 px-1.5 py-0.5 rounded">
+                        {testResult.latencyMs}ms latency
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] mt-0.5 opacity-90">{testResult.message}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Provider-Specific Credentials */}
+            {managingItem.provider === "shopify" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Shopify Store Domain
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="mybrand.myshopify.com"
+                    value={credStoreDomain}
+                    onChange={(e) => setCredStoreDomain(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Shopify Admin API Access Token
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="shpat_..."
+                    value={credAccessToken}
+                    onChange={(e) => setCredAccessToken(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Webhook Signing Secret
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="whsec_..."
+                    value={credWebhookSecret}
+                    onChange={(e) => setCredWebhookSecret(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                  />
+                </div>
+              </div>
+            )}
+
+            {managingItem.provider === "woocommerce" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">WordPress / WooCommerce Site URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://mystore.com"
+                    value={credStoreUrl}
+                    onChange={(e) => setCredStoreUrl(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Consumer Key</label>
+                    <input
+                      type="password"
+                      placeholder="ck_..."
+                      value={credConsumerKey}
+                      onChange={(e) => setCredConsumerKey(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Consumer Secret</label>
+                    <input
+                      type="password"
+                      placeholder="cs_..."
+                      value={credConsumerSecret}
+                      onChange={(e) => setCredConsumerSecret(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {managingItem.provider === "whatsapp" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Meta WhatsApp Phone Number ID</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 108492049281742"
+                    value={credPhoneNumberId}
+                    onChange={(e) => setCredPhoneNumberId(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Meta Cloud API Permanent Access Token</label>
+                  <input
+                    type="password"
+                    placeholder="EAAGz..."
+                    value={credWhatsAppToken}
+                    onChange={(e) => setCredWhatsAppToken(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                  />
+                </div>
+              </div>
+            )}
+
+            {managingItem.provider === "google_calendar" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Google Calendar ID</label>
+                  <input
+                    type="email"
+                    placeholder="primary or sales@company.com"
+                    value={credCalendarId}
+                    onChange={(e) => setCredCalendarId(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                  />
+                </div>
+              </div>
+            )}
+
+            {managingItem.provider !== "shopify" && managingItem.provider !== "woocommerce" && managingItem.provider !== "whatsapp" && managingItem.provider !== "google_calendar" && (
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">API Key / Access Secret</label>
+                <input
+                  type="password"
+                  defaultValue="sec_live_994821a884ef02bc44"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs font-mono"
+                />
+              </div>
+            )}
           </div>
         </Modal>
       )}
