@@ -20,6 +20,7 @@ import Modal from "./ui/Modal";
 import Button from "./ui/Button";
 import StatusBadge from "./ui/StatusBadge";
 import { api } from "@/lib/api";
+import { streamMessageText } from "@/lib/chat-stream";
 
 interface Screen3LiveChatProps {
   onNavigate?: (screen: number) => void;
@@ -40,7 +41,25 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
   const [newChatAgent, setNewChatAgent] = useState("support");
   const [newChatMessage, setNewChatMessage] = useState("");
 
-  const [conversationList, setConversationList] = useState([
+  const [conversationList, setConversationList] = useState<
+    Array<{
+      id: string;
+      customer: string;
+      email: string;
+      message: string;
+      agent: string;
+      agentLabel: string;
+      time: string;
+      status: string;
+      transcript: Array<{
+        sender: string;
+        text: string;
+        time: string;
+        isStreaming?: boolean;
+      }>;
+      orderContext: any;
+    }>
+  >([
     {
       id: "conv-1",
       customer: "Sarah Ahmed",
@@ -252,14 +271,33 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
       });
 
       if (aiRes?.reply) {
-        const aiMsg = {
+        const aiMsg: any = {
           sender: "agent",
-          text: aiRes.reply,
+          text: "",
+          isStreaming: true,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         };
         setConversationList((prev) =>
           prev.map((c) => (c.id === tempId ? { ...c, transcript: [...c.transcript, aiMsg] } : c))
         );
+
+        await streamMessageText(aiRes.reply, (accumulated, isFinished) => {
+          setConversationList((prev) =>
+            prev.map((c) => {
+              if (c.id !== tempId) return c;
+              const updated = [...c.transcript];
+              const lastIdx = updated.length - 1;
+              if (lastIdx >= 0) {
+                updated[lastIdx] = {
+                  ...updated[lastIdx],
+                  text: accumulated,
+                  isStreaming: !isFinished
+                };
+              }
+              return { ...c, transcript: updated };
+            })
+          );
+        });
       }
     } catch (err) {
       console.warn("AI generation failed for new chat", err);
@@ -537,6 +575,9 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                   }`}
                 >
                   {msg.text}
+                  {(msg as any).isStreaming && (
+                    <span className="inline-block w-1.5 h-3 bg-blue-600 rounded-xs animate-pulse ml-0.5 align-middle" />
+                  )}
                 </div>
                 <span className="text-[10px] text-slate-400 mt-1">{msg.time}</span>
               </div>

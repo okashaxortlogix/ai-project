@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Headphones,
   Check,
@@ -25,11 +25,19 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { api } from "@/lib/api";
-
+import { streamMessageText } from "@/lib/chat-stream";
 
 interface Screen4SupportAgentProps {
   onNavigate?: (screen: number) => void;
   isCompact?: boolean;
+}
+
+interface ChatMsg {
+  id: string;
+  sender: "customer" | "agent";
+  content: string;
+  time: string;
+  isStreaming?: boolean;
 }
 
 export default function Screen4SupportAgent({ onNavigate, isCompact = false }: Screen4SupportAgentProps) {
@@ -44,7 +52,7 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
   const [configSaved, setConfigSaved] = useState(false);
 
   // Conversation Sandbox state
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<ChatMsg[]>([
     {
       id: "sup-1",
       sender: "customer",
@@ -66,19 +74,26 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll on new messages or generation updates
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isTyping) return;
 
     const userText = chatInput.trim();
-    const newMsg = {
+    const newMsg: ChatMsg = {
       id: `usr-${Date.now()}`,
-      sender: "customer" as const,
+      sender: "customer",
       content: userText,
       time: "Just now"
     };
 
+    // 1. Immediately show user's message and clear input
     setMessages((prev) => [...prev, newMsg]);
     setChatInput("");
     setIsTyping(true);
@@ -95,16 +110,34 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
         }))
       });
 
+      const replyText = res.reply || "I've checked our records and can assist you with your order updates and shipping inquiries.";
+      const aiId = `ai-${Date.now()}`;
+
+      // 2. Hide typing dots and insert empty streaming placeholder
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
-          id: `ai-${Date.now()}`,
+          id: aiId,
           sender: "agent",
-          content: res.reply || "I've checked our records and can assist you with your order updates and shipping inquiries.",
+          content: "",
+          isStreaming: true,
           time: "Just now"
         }
       ]);
+
+      // 3. Smooth word-by-word streaming typewriter animation
+      await streamMessageText(replyText, (accumulated, isFinished) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiId
+              ? { ...m, content: accumulated, isStreaming: !isFinished }
+              : m
+          )
+        );
+      });
     } catch (err) {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
@@ -114,8 +147,6 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
           time: "Just now"
         }
       ]);
-    } finally {
-      setIsTyping(false);
     }
   };
 
@@ -339,7 +370,12 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
                             : "bg-blue-600 text-white shadow-2xs"
                         }`}
                       >
-                        <div className="whitespace-pre-line">{m.content}</div>
+                        <div className="whitespace-pre-line">
+                          {m.content}
+                          {m.isStreaming && (
+                            <span className="inline-block w-1.5 h-3 bg-blue-600 rounded-xs animate-pulse ml-0.5 align-middle" />
+                          )}
+                        </div>
                         <div
                           className={`text-[9px] mt-1 text-right ${
                             isAgent ? "text-slate-400" : "text-blue-200"
@@ -353,13 +389,14 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
                 })}
 
                 {isTyping && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-9">
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse delay-100"></span>
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse delay-200"></span>
-                    <span className="text-[10px] text-slate-400 ml-1">Support agent is replying...</span>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-9 animate-in fade-in duration-200">
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-150"></span>
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-300"></span>
+                    <span className="text-[10px] text-slate-400 ml-1">Generating response...</span>
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Input Form */}

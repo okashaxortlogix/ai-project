@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Calendar as CalendarIcon,
   Check,
@@ -20,12 +20,20 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
-import { useEffect } from "react";
 import { api } from "@/lib/api";
+import { streamMessageText } from "@/lib/chat-stream";
 
 interface Screen6AppointmentAgentProps {
   onNavigate?: (screen: number) => void;
   isCompact?: boolean;
+}
+
+interface ChatMsg {
+  id: string;
+  sender: "customer" | "agent";
+  content: string;
+  time: string;
+  isStreaming?: boolean;
 }
 
 interface AppointmentItem {
@@ -108,7 +116,7 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
   const [syncedCalendar, setSyncedCalendar] = useState("Google Calendar (Primary)");
 
   // Interactive Live Chat Sandbox
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<ChatMsg[]>([
     {
       id: "m-1",
       sender: "customer",
@@ -136,16 +144,26 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isTyping) return;
 
     const userText = chatInput.trim();
-    setMessages((prev) => [
-      ...prev,
-      { id: `usr-${Date.now()}`, sender: "customer", content: userText, time: "Just now" }
-    ]);
+    const newMsg: ChatMsg = {
+      id: `usr-${Date.now()}`,
+      sender: "customer",
+      content: userText,
+      time: "Just now"
+    };
+
+    // 1. Immediately display user's message and reset input
+    setMessages((prev) => [...prev, newMsg]);
     setChatInput("");
     setIsTyping(true);
 
@@ -165,16 +183,34 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
         await loadAppointments();
       }
 
+      const replyText = res.reply || "I can help check our real-time calendar availability or reschedule any confirmed slot.";
+      const aiId = `ai-${Date.now()}`;
+
+      // 2. Hide typing indicator and insert empty streaming placeholder
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
-          id: `ai-${Date.now()}`,
+          id: aiId,
           sender: "agent",
-          content: res.reply || "I can help check our real-time calendar availability or reschedule any confirmed slot.",
+          content: "",
+          isStreaming: true,
           time: "Just now"
         }
       ]);
+
+      // 3. Stream text smoothly word by word
+      await streamMessageText(replyText, (accumulated, isFinished) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiId
+              ? { ...m, content: accumulated, isStreaming: !isFinished }
+              : m
+          )
+        );
+      });
     } catch (err) {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
@@ -184,8 +220,6 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
           time: "Just now"
         }
       ]);
-    } finally {
-      setIsTyping(false);
     }
   };
 
@@ -478,7 +512,12 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
                             : "bg-blue-600 text-white shadow-2xs"
                         }`}
                       >
-                        <div className="whitespace-pre-line">{m.content}</div>
+                        <div className="whitespace-pre-line">
+                          {m.content}
+                          {m.isStreaming && (
+                            <span className="inline-block w-1.5 h-3 bg-blue-600 rounded-xs animate-pulse ml-0.5 align-middle" />
+                          )}
+                        </div>
                         <div
                           className={`text-[9px] mt-1 text-right ${
                             isAgent ? "text-slate-400" : "text-blue-200"
@@ -491,8 +530,14 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
                   );
                 })}
                 {isTyping && (
-                  <div className="text-xs text-slate-400 pl-9">Appointment agent is replying...</div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-9 animate-in fade-in duration-200">
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-150"></span>
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-300"></span>
+                    <span className="text-[10px] text-slate-400 ml-1">Checking calendar availability...</span>
+                  </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
               <form

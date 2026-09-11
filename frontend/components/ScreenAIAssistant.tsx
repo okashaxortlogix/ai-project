@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Bot,
   Send,
@@ -32,6 +32,7 @@ interface ChatMessage {
   sender: "user" | "ai";
   content: string;
   time: string;
+  isStreaming?: boolean;
   actionPlan?: {
     title: string;
     trigger: string;
@@ -55,9 +56,10 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
   // Plan modal state
   const [activePlanModal, setActivePlanModal] = useState<{
     isOpen: boolean;
-    title: string;
-    trigger: string;
-    actions: string[];
+    title?: string;
+    trigger?: string;
+    actions?: string[];
+    plan?: ChatMessage["actionPlan"];
   }>({
     isOpen: false,
     title: "",
@@ -65,12 +67,28 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
     actions: []
   });
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
   const quickPrompts = [
-    { label: "Help me with a funnel", icon: Layers, query: "Help me with a funnel" },
+    { label: "Create a sales funnel", icon: Layers, query: "Create a high-converting sales funnel template for lead capture" },
     { label: "Show recent conversations", icon: MessageSquare, query: "Show recent conversations" },
     { label: "Check orders", icon: Package, query: "Check orders" },
     { label: "Book an appointment", icon: CalendarIcon, query: "Book an appointment" }
   ];
+
+  const streamMessageText = async (text: string, onUpdate: (accumulated: string, isFinished: boolean) => void) => {
+    const words = text.split(" ");
+    let accumulated = "";
+    for (let i = 0; i < words.length; i++) {
+      accumulated += (i === 0 ? "" : " ") + words[i];
+      onUpdate(accumulated, i === words.length - 1);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    }
+  };
 
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
@@ -83,6 +101,7 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
       time: "Just now"
     };
 
+    // 1. Immediately show user's message and clear input
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInput("");
     setIsTyping(true);
@@ -125,16 +144,35 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
         };
       }
 
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        sender: "ai",
-        content: res.reply || "I've processed your request. How else can I assist your business today?",
-        time: "Just now",
-        actionPlan
-      };
+      const replyText = res.reply || "I've processed your request. How else can I assist your business today?";
+      const aiId = `ai-${Date.now()}`;
 
-      setMessages((prev) => [...prev, aiMsg]);
+      // 2. Hide typing dots and insert empty streaming placeholder
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: aiId,
+          sender: "ai",
+          content: "",
+          isStreaming: true,
+          time: "Just now",
+          actionPlan
+        }
+      ]);
+
+      // 3. Smooth word-by-word streaming typewriter animation
+      await streamMessageText(replyText, (accumulated, isFinished) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiId
+              ? { ...m, content: accumulated, isStreaming: !isFinished }
+              : m
+          )
+        );
+      });
     } catch (err) {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
@@ -144,8 +182,6 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
           time: "Just now"
         }
       ]);
-    } finally {
-      setIsTyping(false);
     }
   };
 
@@ -226,7 +262,12 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
                         : "bg-blue-600 text-white shadow-2xs"
                     }`}
                   >
-                    <div className="whitespace-pre-line">{m.content}</div>
+                    <div className="whitespace-pre-line">
+                      {m.content}
+                      {m.isStreaming && (
+                        <span className="inline-block w-1.5 h-3.5 bg-blue-600 rounded-xs animate-pulse ml-0.5 align-middle" />
+                      )}
+                    </div>
                     <div
                       className={`text-[10px] mt-1 text-right ${
                         isAi ? "text-slate-400" : "text-blue-200"
@@ -315,13 +356,14 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
           })}
 
           {isTyping && (
-            <div className="flex items-center gap-2 text-xs text-slate-400 pl-11">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-100"></span>
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-200"></span>
-              <span className="text-[11px]">Nexa AI is thinking...</span>
+            <div className="flex items-center gap-2 text-xs text-slate-400 pl-11 animate-in fade-in duration-200">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></span>
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-150"></span>
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-300"></span>
+              <span className="text-[11px] text-slate-500">Generating response...</span>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Quick Actions Pills matching Screen 10 */}
@@ -380,9 +422,9 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
       <AIActionPlanModal
         isOpen={activePlanModal.isOpen}
         onClose={() => setActivePlanModal((prev) => ({ ...prev, isOpen: false }))}
-        title={activePlanModal.title}
-        trigger={activePlanModal.trigger}
-        actions={activePlanModal.actions}
+        title={activePlanModal.title || "AI Action Plan"}
+        trigger={activePlanModal.trigger || "Automated Workflow"}
+        actions={activePlanModal.actions || []}
         onExecute={() => {
           setActivePlanModal((prev) => ({ ...prev, isOpen: false }));
           alert("Workflow dispatched and deployed to your GoHighLevel sub-account!");

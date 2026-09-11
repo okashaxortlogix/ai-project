@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   TrendingUp,
   Check,
@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { productsList, Product } from "@/lib/data";
 import { api } from "@/lib/api";
+import { streamMessageText } from "@/lib/chat-stream";
 
 interface Screen5SalesAgentProps {
   onAddToCart?: (product: Product) => void;
@@ -28,7 +29,19 @@ interface Screen5SalesAgentProps {
   isCompact?: boolean;
 }
 
-export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact = false }: Screen5SalesAgentProps) {
+interface ChatMsg {
+  id: string;
+  sender: "customer" | "agent";
+  content: string;
+  time: string;
+  isStreaming?: boolean;
+}
+
+export default function Screen5SalesAgent({
+  onAddToCart,
+  onNavigate,
+  isCompact = false
+}: Screen5SalesAgentProps) {
   const [activeTab, setActiveTab] = useState<"Overview" | "Lead Scoring" | "Live Sales Chat" | "Settings">("Overview");
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
@@ -41,11 +54,12 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
   const [autoDiscount, setAutoDiscount] = useState("10% Welcome Promo (CODE: NEXA10)");
   const [pitchAggressiveness, setPitchAggressiveness] = useState("Consultative (Value-first)");
 
-  const [messages, setMessages] = useState([
+  // Live Chat Sandbox state
+  const [messages, setMessages] = useState<ChatMsg[]>([
     {
-      id: "ai-welcome",
+      id: "ai-1",
       sender: "agent",
-      content: "Hello! Looking for the best laptop for your workload? I can help you pick the right specs or match your budget.",
+      content: "Hi there! I'm your AI Sales Specialist. Looking for laptop recommendations, team hardware bundles, or discount pricing?",
       time: "10:14 AM"
     },
     {
@@ -58,16 +72,26 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [addedItem, setAddedItem] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isTyping) return;
 
     const userText = input.trim();
-    setMessages((prev) => [
-      ...prev,
-      { id: `usr-${Date.now()}`, sender: "customer", content: userText, time: "Just now" }
-    ]);
+    const newMsg: ChatMsg = {
+      id: `usr-${Date.now()}`,
+      sender: "customer",
+      content: userText,
+      time: "Just now"
+    };
+
+    // 1. Immediately show user's message and clear input
+    setMessages((prev) => [...prev, newMsg]);
     setInput("");
     setIsTyping(true);
 
@@ -99,16 +123,34 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
         }
       }
 
+      const replyText = res.reply || "Both models include a 1-year warranty and free expedited shipping. Would you like to proceed?";
+      const aiId = `ai-${Date.now()}`;
+
+      // 2. Hide typing indicator and insert streaming placeholder
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
-          id: `ai-${Date.now()}`,
+          id: aiId,
           sender: "agent",
-          content: res.reply || "Both models include a 1-year warranty and free expedited shipping. Would you like to proceed?",
+          content: "",
+          isStreaming: true,
           time: "Just now"
         }
       ]);
+
+      // 3. Stream text smoothly word by word
+      await streamMessageText(replyText, (accumulated, isFinished) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiId
+              ? { ...m, content: accumulated, isStreaming: !isFinished }
+              : m
+          )
+        );
+      });
     } catch (err) {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
         {
@@ -118,8 +160,6 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
           time: "Just now"
         }
       ]);
-    } finally {
-      setIsTyping(false);
     }
   };
 
@@ -382,7 +422,12 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
                             : "bg-blue-600 text-white shadow-2xs"
                         }`}
                       >
-                        <div className="whitespace-pre-line">{m.content}</div>
+                        <div className="whitespace-pre-line">
+                          {m.content}
+                          {m.isStreaming && (
+                            <span className="inline-block w-1.5 h-3 bg-blue-600 rounded-xs animate-pulse ml-0.5 align-middle" />
+                          )}
+                        </div>
                         <div
                           className={`text-[9px] mt-1 text-right ${
                             isAgent ? "text-slate-400" : "text-blue-200"
@@ -395,8 +440,14 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
                   );
                 })}
                 {isTyping && (
-                  <div className="text-xs text-slate-400 pl-9">Sales agent is typing...</div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-9 animate-in fade-in duration-200">
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-150"></span>
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-300"></span>
+                    <span className="text-[10px] text-slate-400 ml-1">Generating response...</span>
+                  </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
               <form

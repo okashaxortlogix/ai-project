@@ -36,7 +36,10 @@ export class AiOrchestrator {
     const lower = text.toLowerCase();
 
     // 1. Human Handoff Intent
-    if (/\b(human|representative|agent|operator|person|talk to someone|help desk|escalate|manager)\b/.test(lower)) {
+    if (
+      /\b(human|representative|agent|operator|person|talk to someone|help desk|escalate|manager|contact|connect me|connected)\b/.test(lower) &&
+      !lower.includes("ai agent") && !lower.includes("support agent configuration") && !lower.includes("appointment agent configuration")
+    ) {
       return { agentType: "human", confidence: 0.98, extractedEntities: {} };
     }
 
@@ -56,7 +59,10 @@ export class AiOrchestrator {
     }
 
     // 3. Sales & Product Intent
-    if (/\b(price|pricing|cost|quote|buy|purchase|features|discount|laptop|plan|pro|enterprise|sales|product|recommend)\b/.test(lower)) {
+    if (
+      /\b(price|pricing|cost|quote|buy|purchase|features|discount|laptop|macbook|dell|inspiron|bundle|hardware|units|quantity|plan|pro|enterprise|sales|product|recommend)\b/.test(lower) ||
+      /\d+\s*(?:macbook|dell|laptop)/i.test(lower)
+    ) {
       let budget = undefined;
       const budgetMatch = lower.match(/\$?(\d{3,4})/);
       if (budgetMatch) budget = parseInt(budgetMatch[1], 10);
@@ -374,14 +380,27 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
       }
     }
 
+    const lower = userMessage.toLowerCase();
+
     // Deterministic High-Fidelity Local Orchestration Engine
     switch (intent.agentType) {
       case "support": {
-        if (intent.extractedEntities.orderNumber || userMessage.includes("order") || userMessage.includes("#")) {
+        if (lower.includes("address") || lower.includes("office") || lower.includes("change location") || lower.includes("redirect")) {
+          reply = `Yes, you can certainly change your delivery address to your office! As long as the package has not left the regional carrier distribution hub, we can redirect it.
+
+Please provide your office address:
+• Company Name & Floor/Suite #
+• Street Address
+• City, State & ZIP Code
+
+Once provided, I will submit an immediate carrier reroute request for order #12345 (FedEx Express #FDX-994821).`;
+        } else if (intent.extractedEntities.orderNumber || lower.includes("order") || lower.includes("#") || lower.includes("track") || lower.includes("where is")) {
           const orderNum = intent.extractedEntities.orderNumber || "#12345";
           const orderData = await this.executeTool(orgId, "get_order_status", { orderNumber: orderNum }, conversationId, customerId);
           toolResult = { toolName: "get_order_status", result: orderData };
-          reply = `Let me check that for you. I found your order ${orderData.orderNumber}. It's currently ${orderData.status} and is expected to arrive ${orderData.estimatedDelivery}.\n\nTracking Number: ${orderData.trackingNumber}`;
+          reply = `Let me check that for you! I found your order ${orderData.orderNumber}. It's currently ${orderData.status} and is expected to arrive ${orderData.estimatedDelivery} via ${orderData.carrier}.\n\nTracking Number: **${orderData.trackingNumber}**\nHub: ${orderData.location}`;
+        } else if (lower.includes("return") || lower.includes("refund") || lower.includes("exchange")) {
+          reply = `Our return policy provides a **30-day hassle-free return window** on all hardware and unopened items. Full refunds are processed within 48 hours of return delivery, and we provide prepaid return shipping labels.\n\nWould you like me to initiate a return label for an order?`;
         } else if (ragResult.match) {
           reply = `According to our approved ${ragResult.source}:\n\n"${ragResult.chunk}"\n\nPlease let me know if you would like me to assist you with any next steps!`;
         } else {
@@ -394,13 +413,67 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
         const products = await this.executeTool(orgId, "get_products", {}, conversationId, customerId);
         toolResult = { toolName: "get_products", result: products };
 
-        if (userMessage.toLowerCase().includes("budget") || userMessage.toLowerCase().includes("laptop") || userMessage.toLowerCase().includes("plan")) {
-          await this.executeTool(orgId, "create_lead", { name: customerName, score: 85, notes: `Inquired: "${userMessage}"` }, conversationId, customerId);
-          reply = `Here are the top options that match your needs:\n\n1. MacBook Air M1 — $799 (Up to 18 hours battery, lightweight & powerful)\n2. Dell Inspiron 15 — $749 (10 hours battery, Intel Core i7, great value for money)\n\nWould you like me to add either of these to your cart or book a call with our specialist?`;
-        } else if (userMessage.toLowerCase().includes("discount") || userMessage.toLowerCase().includes("annual")) {
-          reply = "We offer a 20% discount on all annual billing plans! Would you like me to apply this promo code to your current checkout?";
+        // Check for bulk quantity patterns (e.g. "15 macbooks and 20 dell", "10 units", etc.)
+        const macMatch = lower.match(/(\d+)\s*(?:macbook|mac|apple)/i);
+        const dellMatch = lower.match(/(\d+)\s*(?:dell|inspiron)/i);
+
+        if (macMatch || dellMatch || lower.includes("bulk") || lower.includes("enterprise") || lower.includes("volume") || lower.includes("quote")) {
+          const macCount = macMatch ? parseInt(macMatch[1], 10) : 0;
+          const dellCount = dellMatch ? parseInt(dellMatch[1], 10) : 0;
+          const totalUnits = macCount + dellCount;
+
+          if (totalUnits > 0) {
+            const macSubtotal = macCount * 799;
+            const dellSubtotal = dellCount * 749;
+            const subtotal = macSubtotal + dellSubtotal;
+            const discountRate = totalUnits >= 30 ? 0.20 : totalUnits >= 10 ? 0.15 : 0.10;
+            const discountAmt = Math.round(subtotal * discountRate);
+            const finalTotal = subtotal - discountAmt;
+
+            reply = `For your bulk hardware package (${totalUnits} total units), here is your custom enterprise breakdown:
+
+• **${macCount}x MacBook Air M1**: $${macSubtotal.toLocaleString()} ($799/unit)
+• **${dellCount}x Dell Inspiron 15**: $${dellSubtotal.toLocaleString()} ($749/unit)
+• **Retail Subtotal**: $${subtotal.toLocaleString()}
+• **Enterprise Volume Discount (${Math.round(discountRate * 100)}% off)**: -$${discountAmt.toLocaleString()}
+• **Final Total Quoted**: **$${finalTotal.toLocaleString()}**
+
+✨ **Included with this order:**
+- Free Priority White-Glove Business Freight
+- 1-Year Comprehensive Hardware Warranty & Setup Support
+- Dedicated Enterprise Account Executive
+
+Would you like me to connect you directly with our Enterprise Sales Specialist to issue an official invoice, or book a 15-minute onboarding review?`;
+          } else {
+            reply = `For corporate and bulk hardware bundles of 10+ units, we provide custom enterprise volume discounts of up to **20% off retail**, along with dedicated deployment support and priority business shipping.\n\nTell me which models and quantities your team needs, and I'll calculate an instant volume quote!`;
+          }
+
+          await this.executeTool(orgId, "create_lead", {
+            name: customerName,
+            score: 95,
+            notes: `Enterprise Bulk Inquiry: ${userMessage}`
+          }, conversationId, customerId);
+        } else if (lower.includes("discount") || lower.includes("promo") || lower.includes("coupon") || lower.includes("annual")) {
+          reply = `We offer two primary discount promotions:
+1. **20% Off Annual Billing Plans** — promo code **ANNUAL20** applied at checkout.
+2. **15% Off Any Hardware Order** — promo code **SPRING15** for instant savings.
+
+Would you like me to apply one of these codes to your current checkout?`;
+        } else if (lower.includes("budget") || lower.includes("laptop") || lower.includes("macbook") || lower.includes("dell") || lower.includes("buy") || lower.includes("recommend")) {
+          await this.executeTool(orgId, "create_lead", {
+            name: customerName,
+            score: 85,
+            notes: `Inquired: "${userMessage}"`
+          }, conversationId, customerId);
+
+          reply = `Here are the top options that match your needs:
+
+1. **MacBook Air M1** — $799 (Up to 18 hours battery, Apple Silicon, lightweight & powerful)
+2. **Dell Inspiron 15** — $749 (10 hours battery, Intel Core i7, 16GB RAM, brilliant 15.6" display)
+
+Both models include free expedited delivery and a 30-day guarantee. Would you like me to add either to your cart or book a call with our specialist?`;
         } else {
-          reply = "Our Sales Agent can recommend hardware bundles, answer pricing questions, or configure custom enterprise packages for your team.";
+          reply = "Our Sales Agent can recommend hardware bundles, answer pricing questions, or configure custom enterprise packages for your team. What are you looking to purchase?";
         }
         break;
       }
@@ -410,16 +483,29 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
           const slot = intent.extractedEntities.requestedSlot;
           const apt = await this.executeTool(orgId, "create_appointment", { time: `${slot} - 30m`, customerName }, conversationId, customerId);
           toolResult = { toolName: "create_appointment", result: apt };
-          reply = `Perfect! Your demo has been scheduled for tomorrow at ${slot}. Synced automatically with Google Calendar and Outlook. A confirmation email has been dispatched.`;
+          reply = `Perfect! Your demo has been scheduled for tomorrow at **${slot}**. Synced automatically with Google Calendar and Outlook, and a confirmation email has been dispatched.`;
         } else {
-          reply = "I would be delighted to schedule a live demo! Here are our available slots for tomorrow:\n• 10:00 AM\n• 11:30 AM\n• 2:00 PM\n• 4:30 PM\n\nWhich time works best for you?";
+          reply = `I would be delighted to schedule a live demo! Here are our available slots for tomorrow:
+• **10:00 AM**
+• **11:30 AM**
+• **02:00 PM**
+• **04:30 PM**
+
+Which time works best for your schedule?`;
         }
         break;
       }
 
       case "human": {
         await this.executeTool(orgId, "handoff_to_human", {}, conversationId, customerId);
-        reply = "I have prioritized your request and transferred this conversation to a live senior representative. Someone from our team will respond in this chat shortly.";
+        reply = `I have prioritized your request and transferred this conversation directly to our Senior Sales Specialist!
+
+📞 **Direct Contact Details:**
+• **Phone:** +1 (800) 555-0199 (Ext. 2 for Enterprise Sales)
+• **Direct Email:** sales@acmestore.com
+• **Representative Desk:** Available Monday – Friday, 9:00 AM – 6:00 PM EST
+
+A specialist has been notified and will join this thread. In the meantime, would you like me to book a 15-minute VIP discovery call directly on the calendar for tomorrow?`;
         break;
       }
     }
