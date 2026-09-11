@@ -4,16 +4,20 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Ecommerce\WooCommerceService;
+use App\Services\Ecommerce\ShopifyService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class WooCommerceController extends Controller
 {
     protected WooCommerceService $wooService;
+    protected ShopifyService $shopifyService;
 
-    public function __construct(WooCommerceService $wooService)
+    public function __construct(WooCommerceService $wooService, ShopifyService $shopifyService)
     {
         $this->wooService = $wooService;
+        $this->shopifyService = $shopifyService;
     }
 
     /**
@@ -166,5 +170,150 @@ class WooCommerceController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Handle incoming WooCommerce Webhook with HMAC SHA256 verification
+     *
+     * Validates X-WC-Webhook-Signature header against WOOCOMMERCE_WEBHOOK_SECRET
+     */
+    public function handleWebhook(Request $request)
+    {
+        $signature = $request->header('X-WC-Webhook-Signature') ?? $request->header('x-wc-webhook-signature');
+
+        if (empty($signature)) {
+            Log::warning("WooCommerce Webhook: Missing X-WC-Webhook-Signature header.");
+            return response()->json([
+                'success' => false,
+                'message' => 'Missing X-WC-Webhook-Signature header.'
+            ], 401);
+        }
+
+        $rawPayload = $request->getContent();
+        $secret = config('ecommerce.woocommerce.webhook_secret', env('WOOCOMMERCE_WEBHOOK_SECRET', '2146'));
+
+        // Compute HMAC SHA256 base64-encoded signature
+        $expectedSignature = base64_encode(hash_hmac('sha256', $rawPayload, $secret, true));
+
+        if (!hash_equals($expectedSignature, (string)$signature)) {
+            Log::warning("WooCommerce Webhook: HMAC signature mismatch.", [
+                'received' => $signature,
+                'expected' => $expectedSignature
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid HMAC webhook signature.'
+            ], 401);
+        }
+
+        $topic = $request->header('X-WC-Webhook-Topic') ?? 'order.created';
+        $payload = $request->json()->all();
+
+        if (empty($payload)) {
+            $payload = json_decode($rawPayload, true) ?? [];
+        }
+
+        Log::info("WooCommerce Webhook Authenticated successfully. Topic: {$topic}");
+
+        // If order payload, trigger cross-platform sync
+        if (isset($payload['line_items']) || str_contains($topic, 'order')) {
+            $syncSummary = $this->handleWooCommerceOrderCreated($payload);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'WooCommerce order webhook processed and cross-platform sync completed.',
+                'topic' => $topic,
+                'sync_summary' => $syncSummary
+            ], 200);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Webhook received for topic '{$topic}'. No inventory action required.",
+            'topic' => $topic
+        ], 200);
+    }
+
+    /**
+     * Auto-Sync Logic: WooCommerce Order -> Shopify Inventory
+     *
+     * Parses the order payload, extracts ordered line items (SKU and quantity),
+     * and calls ShopifyService to deduct or update matching inventory on Shopify.
+     */
+    public function handleWooCommerceOrderCreated(array $payload): array
+    {
+        $orderId = $payload['id'] ?? 'unknown';
+        $orderNumber = $payload['number'] ?? $orderId;
+        $lineItems = $payload['line_items'] ?? [];
+
+        $synced = [];
+        $warnings = [];
+
+        Log::info("Processing WooCommerce Order #{$orderNumber} (ID: {$orderId}) for cross-platform Shopify sync.", [
+            'total_line_items' => count($lineItems)
+        ]);
+
+        foreach ($lineItems as $item) {
+            $sku = trim($item['sku'] ?? '');
+            $quantity = (int)($item['quantity'] ?? 1);
+            $itemName = $item['name'] ?? 'Unnamed Product';
+
+            if (empty($sku)) {
+                $warningMsg = "WooCommerce Order #{$orderNumber}: Line item '{$itemName}' (ID: " . ($item['id'] ?? 'N/A') . ") is missing a SKU. Cannot sync with Shopify.";
+                Log::warning($warningMsg);
+                $warnings[] = [
+                    'item_name' => $itemName,
+                    'message' => $warningMsg
+                ];
+                continue;
+            }
+
+            try {
+                // Call ShopifyService to deduct inventory for the matching SKU
+                $deductResult = $this->shopifyService->deductInventoryBySku($sku, $quantity);
+
+                if (!empty($deductResult['success'])) {
+                    Log::info("Cross-Platform Sync Success: WooCommerce Order #{$orderNumber} -> Deducted {$quantity} unit(s) for SKU '{$sku}' on Shopify.", [
+                        'order_id' => $orderId,
+                        'sku' => $sku,
+                        'quantity' => $quantity,
+                        'sync_details' => $deductResult
+                    ]);
+
+                    $synced[] = [
+                        'sku' => $sku,
+                        'quantity' => $quantity,
+                        'status' => 'synced',
+                        'sync_details' => $deductResult
+                    ];
+                } else {
+                    $warnMsg = "Cross-Platform Sync Warning: WooCommerce Order #{$orderNumber} -> Failed to deduct inventory for SKU '{$sku}' on Shopify: " . ($deductResult['message'] ?? 'Not found');
+                    Log::warning($warnMsg);
+                    $warnings[] = [
+                        'sku' => $sku,
+                        'quantity' => $quantity,
+                        'message' => $warnMsg
+                    ];
+                }
+            } catch (Exception $e) {
+                $errorMsg = "Cross-Platform Sync Error for SKU '{$sku}': " . $e->getMessage();
+                Log::error($errorMsg);
+                $warnings[] = [
+                    'sku' => $sku,
+                    'quantity' => $quantity,
+                    'message' => $errorMsg
+                ];
+            }
+        }
+
+        return [
+            'order_id' => $orderId,
+            'order_number' => $orderNumber,
+            'total_items' => count($lineItems),
+            'synced_items' => count($synced),
+            'warning_items' => count($warnings),
+            'synced' => $synced,
+            'warnings' => $warnings
+        ];
     }
 }

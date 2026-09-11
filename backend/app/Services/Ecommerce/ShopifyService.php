@@ -136,6 +136,130 @@ class ShopifyService
     }
 
     /**
+     * Find a variant across Shopify products by SKU
+     */
+    public function findVariantBySku(string $sku): ?array
+    {
+        try {
+            $products = $this->getProducts(['limit' => 50]);
+            foreach ($products as $product) {
+                if (!empty($product['variants'])) {
+                    foreach ($product['variants'] as $variant) {
+                        if (isset($variant['sku']) && strcasecmp(trim($variant['sku']), trim($sku)) === 0) {
+                            $variant['product_title'] = $product['title'] ?? '';
+                            return $variant;
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            Log::error("ShopifyService::findVariantBySku failed for SKU {$sku}: " . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch primary/active store location ID
+     */
+    public function getPrimaryLocationId(): ?int
+    {
+        try {
+            $locations = $this->sendRequest('get', 'locations.json');
+            if (!empty($locations['locations'][0]['id'])) {
+                return (int)$locations['locations'][0]['id'];
+            }
+        } catch (Exception $e) {
+            Log::warning("Could not fetch Shopify locations: " . $e->getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Adjust inventory level for an inventory item
+     */
+    public function adjustInventory(int|string $inventoryItemId, int $adjustment, ?int $locationId = null): array
+    {
+        $locId = $locationId ?? $this->getPrimaryLocationId();
+        if (!$locId) {
+            throw new Exception("No active Shopify location available for inventory adjustment.");
+        }
+
+        $payload = [
+            'location_id' => $locId,
+            'inventory_item_id' => (int)$inventoryItemId,
+            'available_adjustment' => $adjustment
+        ];
+
+        return $this->sendRequest('post', 'inventory_levels/adjust.json', $payload);
+    }
+
+    /**
+     * Deduct inventory by SKU (e.g. triggered by WooCommerce order)
+     */
+    public function deductInventoryBySku(string $sku, int $quantity = 1): array
+    {
+        $variant = $this->findVariantBySku($sku);
+        if (!$variant) {
+            return [
+                'success' => false,
+                'sku' => $sku,
+                'message' => "SKU '{$sku}' not found in Shopify product catalog."
+            ];
+        }
+
+        $variantId = $variant['id'];
+        $inventoryItemId = $variant['inventory_item_id'] ?? null;
+        $currentStock = $variant['inventory_quantity'] ?? 0;
+        $newStock = max(0, $currentStock - $quantity);
+
+        // Try adjusting via inventory_levels API first if inventory_item_id exists
+        if ($inventoryItemId) {
+            try {
+                $adjustResult = $this->adjustInventory($inventoryItemId, -$quantity);
+                return [
+                    'success' => true,
+                    'sku' => $sku,
+                    'variant_id' => $variantId,
+                    'inventory_item_id' => $inventoryItemId,
+                    'deducted' => $quantity,
+                    'new_available' => $adjustResult['inventory_level']['available'] ?? null,
+                    'method' => 'inventory_levels_adjust'
+                ];
+            } catch (Exception $e) {
+                Log::info("inventory_levels adjust failed, falling back to direct variant quantity update: " . $e->getMessage());
+            }
+        }
+
+        // Fallback: update variant inventory_quantity directly
+        try {
+            $this->sendRequest('put', "variants/{$variantId}.json", [
+                'variant' => [
+                    'id' => $variantId,
+                    'inventory_quantity' => $newStock
+                ]
+            ]);
+
+            return [
+                'success' => true,
+                'sku' => $sku,
+                'variant_id' => $variantId,
+                'deducted' => $quantity,
+                'previous_stock' => $currentStock,
+                'new_stock' => $newStock,
+                'method' => 'variant_update'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'sku' => $sku,
+                'variant_id' => $variantId,
+                'message' => "Failed to update Shopify inventory for SKU '{$sku}': " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Send HTTP request to Shopify REST Admin API
      */
     protected function sendRequest(string $method, string $endpoint, array $data = []): array

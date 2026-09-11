@@ -12,6 +12,7 @@ return [
         'consumer_secret' => env('WOOCOMMERCE_CONSUMER_SECRET', ''),
         'version' => env('WOOCOMMERCE_API_VERSION', 'wc/v3'),
         'verify_ssl' => env('WOOCOMMERCE_VERIFY_SSL', false),
+        'webhook_secret' => env('WOOCOMMERCE_WEBHOOK_SECRET', '2146'),
         'timeout' => 15,
     ],
 

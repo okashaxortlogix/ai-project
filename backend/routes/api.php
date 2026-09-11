@@ -129,6 +129,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders', [WooCommerceController::class, 'getOrders']);
         Route::post('/orders', [WooCommerceController::class, 'createOrder']);
         Route::get('/orders/{id}', [WooCommerceController::class, 'getOrder']);
+        Route::post('/webhook', [WooCommerceController::class, 'handleWebhook']);
     });
 
     Route::prefix('shopify')->group(function () {
