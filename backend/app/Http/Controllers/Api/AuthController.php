@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Organization;
 
@@ -14,35 +15,51 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email',
-            'password' => 'nullable|string',
+            'password' => 'required|string|min:6',
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
         if (!$user) {
-            // Demo / first-time auto provision for seamless evaluation
+            // Auto-provision user & org for seamless initial setup if not exists
+            $namePart = explode('@', $validated['email'])[0];
+            $orgName = ucfirst($namePart) . "'s Team";
+            $orgSlug = Str::slug($orgName) ?: 'acme-corp';
+
             $org = Organization::firstOrCreate(
-                ['slug' => 'acme-corp'],
+                ['slug' => $orgSlug],
                 [
-                    'id' => 'org-acme-1',
-                    'name' => 'Acme Corporation',
+                    'id' => (string) Str::uuid(),
+                    'name' => $orgName,
                     'timezone' => 'America/New_York',
-                    'settings' => ['theme' => 'light']
+                    'settings_json' => ['theme' => 'light'],
+                    'status' => 'active'
                 ]
             );
 
             $user = User::create([
-                'id' => 'usr-' . time(),
+                'id' => (string) Str::uuid(),
                 'organization_id' => $org->id,
-                'name' => explode('@', $validated['email'])[0],
+                'name' => ucwords(str_replace(['.', '_', '-'], ' ', $namePart)),
                 'email' => $validated['email'],
-                'password' => Hash::make($validated['password'] ?? 'secret123'),
+                'password' => Hash::make($validated['password']),
                 'role' => 'Admin',
-                'avatar' => 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80',
+                'avatar' => "https://ui-avatars.com/api/?name=" . urlencode($namePart) . "&background=2563EB&color=fff&size=120",
+                'is_active' => true
             ]);
+        } else {
+            // Verify password if user already exists and has a password
+            if ($user->password && !Hash::check($validated['password'], $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid credentials provided.'
+                ], 401);
+            }
         }
 
-        $token = $user->createToken('auth-token')->plainTextToken ?? 'mock_jwt_token_' . base64_encode($user->id);
+        $token = method_exists($user, 'createToken') 
+            ? ($user->createToken('auth-token')->plainTextToken ?? 'tok_' . bin2hex(random_bytes(24)))
+            : 'tok_' . bin2hex(random_bytes(24));
 
         return response()->json([
             'success' => true,
@@ -51,7 +68,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role,
+                'role' => $user->role ?? 'Admin',
                 'avatar' => $user->avatar,
                 'organization_id' => $user->organization_id
             ]
@@ -67,25 +84,30 @@ class AuthController extends Controller
             'organization_name' => 'nullable|string|max:255',
         ]);
 
+        $orgName = $validated['organization_name'] ?? ($validated['name'] . "'s Org");
         $org = Organization::create([
-            'id' => 'org-' . uniqid(),
-            'name' => $validated['organization_name'] ?? ($validated['name'] . "'s Org"),
-            'slug' => \Illuminate\Support\Str::slug($validated['organization_name'] ?? $validated['name']),
+            'id' => (string) Str::uuid(),
+            'name' => $orgName,
+            'slug' => Str::slug($orgName) . '-' . Str::random(4),
             'timezone' => 'UTC',
-            'settings' => []
+            'settings_json' => ['theme' => 'light'],
+            'status' => 'active'
         ]);
 
         $user = User::create([
-            'id' => 'usr-' . uniqid(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $org->id,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'Admin',
-            'avatar' => 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80'
+            'avatar' => "https://ui-avatars.com/api/?name=" . urlencode($validated['name']) . "&background=2563EB&color=fff&size=120",
+            'is_active' => true
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken ?? 'mock_jwt_token_' . base64_encode($user->id);
+        $token = method_exists($user, 'createToken') 
+            ? ($user->createToken('auth-token')->plainTextToken ?? 'tok_' . bin2hex(random_bytes(24)))
+            : 'tok_' . bin2hex(random_bytes(24));
 
         return response()->json([
             'success' => true,
@@ -105,7 +127,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        if ($request->user()) {
+        if ($request->user() && method_exists($request->user(), 'currentAccessToken')) {
             $request->user()->currentAccessToken()?->delete();
         }
         return response()->json([

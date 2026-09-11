@@ -45,20 +45,14 @@ export default function Screen7Leads({ onNavigate, isCompact = false }: Screen7L
   const loadLeads = async () => {
     try {
       const res = await api.getLeads(filter, search);
-      if (res.success && res.data && res.data.length > 0) {
+      if (res && res.success && Array.isArray(res.data)) {
         setLeads(res.data);
       } else {
-        // Fallback default leads if db empty
-        setLeads([
-          { id: "1", name: "Sarah Ahmed", email: "sarah@gmail.com", phone: "+1 (555) 234-8901", source: "Live Chat", status: "Qualified", agent: "Appointment Agent", lastActivity: "10 mins ago" },
-          { id: "2", name: "Ali Raza", email: "ali.raza@acme.com", phone: "+1 (555) 789-1234", source: "Website Funnel", status: "Contacted", agent: "Sales Agent", lastActivity: "45 mins ago" },
-          { id: "3", name: "Fatima Khan", email: "fatima@acme.com", phone: "+1 (555) 456-7890", source: "Shopify Store", status: "Converted", agent: "Support Agent", lastActivity: "2 hours ago" },
-          { id: "4", name: "Usman Tariq", email: "usman@gmail.com", phone: "+1 (555) 890-4321", source: "Inbound SMS", status: "New", agent: "Sales Agent", lastActivity: "4 hours ago" },
-          { id: "5", name: "Ayesha Malik", email: "ayesha@tech.com", phone: "+1 (555) 321-6549", source: "Facebook Ad", status: "Lost", agent: "Sales Agent", lastActivity: "1 day ago" }
-        ]);
+        setLeads([]);
       }
     } catch (e) {
       console.error("Failed to load leads from API", e);
+      setLeads([]);
     } finally {
       setLoading(false);
     }

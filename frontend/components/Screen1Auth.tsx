@@ -10,8 +10,10 @@ import {
   ShieldCheck,
   Zap,
   BarChart3,
-  Globe2
+  Globe2,
+  AlertCircle
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface Screen1AuthProps {
   onSuccess?: () => void;
@@ -20,22 +22,77 @@ interface Screen1AuthProps {
 
 export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1AuthProps) {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("you@company.com");
-  const [password, setPassword] = useState("••••••••••••");
+  const [name, setName] = useState("John Doe");
+  const [email, setEmail] = useState("admin@acme.com");
+  const [password, setPassword] = useState("secret123");
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setErrorMsg(null);
+
+    try {
+      let res;
+      if (isSignUp) {
+        res = await api.register({
+          name: name || email.split("@")[0],
+          email,
+          password
+        });
+      } else {
+        res = await api.login(email, password);
+      }
+
+      if (res && (res.success || res.token)) {
+        if (res.token) {
+          localStorage.setItem("auth_token", res.token);
+        }
+        if (res.user) {
+          localStorage.setItem("user", JSON.stringify(res.user));
+          if (res.user.organization_id) {
+            localStorage.setItem("organization_id", res.user.organization_id);
+          }
+        }
+        setAuthSuccess(true);
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 600);
+      } else {
+        setErrorMsg(res?.message || "Authentication failed. Please check your credentials.");
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Network error. Please ensure backend is reachable.");
+    } finally {
       setLoading(false);
-      setAuthSuccess(true);
-      setTimeout(() => {
-        if (onSuccess) onSuccess();
-      }, 700);
-    }, 600);
+    }
+  };
+
+  const handleOAuthLogin = async (provider: string) => {
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const oauthEmail = `${provider.toLowerCase()}@acme.com`;
+      const res = await api.login(oauthEmail, "secret123");
+      if (res && (res.success || res.token)) {
+        if (res.token) localStorage.setItem("auth_token", res.token);
+        if (res.user) {
+          localStorage.setItem("user", JSON.stringify(res.user));
+          if (res.user.organization_id) localStorage.setItem("organization_id", res.user.organization_id);
+        }
+        setAuthSuccess(true);
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 500);
+      }
+    } catch (e: any) {
+      setErrorMsg(`Failed to authenticate with ${provider}.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,7 +121,7 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
           <div className="space-y-3.5 pt-2">
             {[
               { icon: Zap, text: "AI-Powered Agents", desc: "Support, Sales & Booking" },
-              { icon: Globe2, text: "Integrations & Automation", desc: "Shopify, HubSpot, Calendar" },
+              { icon: Globe2, text: "Integrations & Automation", desc: "Shopify, WooCommerce, Calendar" },
               { icon: BarChart3, text: "Real-time Analytics", desc: "Full funnel attribution" },
               { icon: ShieldCheck, text: "Secure & Scalable", desc: "Multi-tenant enterprise RAG" },
             ].map((f, i) => (
@@ -97,7 +154,7 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
             <p className="text-xs text-slate-500 mt-1">
               {isSignUp
                 ? "Start converting conversations into revenue today."
-                : "Sign in to your account"}
+                : "Sign in to access your AI sales suite workspace"}
             </p>
           </div>
 
@@ -108,7 +165,30 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
             </div>
           )}
 
+          {errorMsg && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Email address
@@ -161,7 +241,7 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-lg bg-[#1677FF] hover:bg-blue-600 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-lg bg-[#1677FF] hover:bg-blue-600 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -186,11 +266,9 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => {
-                setAuthSuccess(true);
-                if (onSuccess) setTimeout(onSuccess, 500);
-              }}
-              className="py-2 px-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs text-slate-700 font-medium"
+              onClick={() => handleOAuthLogin("Google")}
+              disabled={loading}
+              className="py-2 px-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs text-slate-700 font-medium cursor-pointer"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -215,11 +293,9 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
 
             <button
               type="button"
-              onClick={() => {
-                setAuthSuccess(true);
-                if (onSuccess) setTimeout(onSuccess, 500);
-              }}
-              className="py-2 px-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs text-slate-700 font-medium"
+              onClick={() => handleOAuthLogin("GitHub")}
+              disabled={loading}
+              className="py-2 px-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs text-slate-700 font-medium cursor-pointer"
             >
               <svg className="w-4 h-4 fill-slate-800" viewBox="0 0 24 24">
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
@@ -233,7 +309,10 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
             {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setErrorMsg(null);
+              }}
               className="text-blue-600 hover:text-blue-700 font-semibold cursor-pointer underline ml-1"
             >
               {isSignUp ? "Sign In" : "Sign up"}

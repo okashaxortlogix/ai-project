@@ -10,13 +10,23 @@ class Lead extends Model
 {
     use HasUuids;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'id',
         'organization_id',
         'customer_id',
         'owner_user_id',
+        'name',
+        'email',
+        'phone',
+        'company',
         'stage',
+        'status',
         'source',
         'score',
+        'avatar',
         'qualification_json',
         'notes',
         'external_ids_json'

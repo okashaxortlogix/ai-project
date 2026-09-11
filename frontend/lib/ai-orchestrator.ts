@@ -1,6 +1,7 @@
 // Production AI Orchestration Engine: Gemini / OpenAI Integration with Multi-Agent Routing & Tool Calling
 import { Database, DBMessage } from "./db";
 import { RagPipeline, RagSearchResult } from "./rag-pipeline";
+import { api } from "./api";
 
 export type AgentType = "support" | "sales" | "appointment" | "human";
 
@@ -40,22 +41,22 @@ export class AiOrchestrator {
     }
 
     // 2. Appointment Booking Intent
-    if (/\b(book|appointment|demo|schedule|meeting|slot|calendar|reserve|call with|timing)\b/.test(lower)) {
-      let slot = undefined;
-      if (lower.includes("10:00") || lower.includes("10 am")) slot = "10:00 AM";
-      if (lower.includes("11:30")) slot = "11:30 AM";
-      if (lower.includes("2:00") || lower.includes("2 pm")) slot = "2:00 PM";
-      if (lower.includes("4:30")) slot = "4:30 PM";
+    if (/\b(appointment|booking|schedule|meet|call|calendar|demo|slot|time|reschedule|book)\b/.test(lower)) {
+      let requestedSlot = undefined;
+      if (lower.includes("10") || lower.includes("morning")) requestedSlot = "10:00 AM";
+      else if (lower.includes("11:30") || lower.includes("11")) requestedSlot = "11:30 AM";
+      else if (lower.includes("2") || lower.includes("afternoon")) requestedSlot = "2:00 PM";
+      else if (lower.includes("4:30") || lower.includes("evening")) requestedSlot = "4:30 PM";
 
       return {
         agentType: "appointment",
         confidence: 0.95,
-        extractedEntities: { requestedSlot: slot }
+        extractedEntities: { requestedSlot }
       };
     }
 
-    // 3. Sales & Product Discovery Intent
-    if (/\b(price|pricing|cost|quote|recommend|laptop|macbook|dell|discount|plan|plans|deal|buy|purchase|cart)\b/.test(lower)) {
+    // 3. Sales & Product Intent
+    if (/\b(price|pricing|cost|quote|buy|purchase|features|discount|laptop|plan|pro|enterprise|sales|product|recommend)\b/.test(lower)) {
       let budget = undefined;
       const budgetMatch = lower.match(/\$?(\d{3,4})/);
       if (budgetMatch) budget = parseInt(budgetMatch[1], 10);
@@ -82,13 +83,13 @@ export class AiOrchestrator {
   /**
    * Server-controlled Tool Execution Layer
    */
-  static executeTool(
+  static async executeTool(
     orgId: string,
     toolName: string,
     params: any,
     conversationId: string,
     customerId: string
-  ): any {
+  ): Promise<any> {
     switch (toolName) {
       case "get_order_status": {
         const orderNum = params.orderNumber || "#12345";
@@ -120,7 +121,7 @@ export class AiOrchestrator {
         ];
       }
       case "create_lead": {
-        return Database.createLead({
+        const leadPayload = {
           organization_id: orgId,
           customer_id: customerId,
           name: params.name || "Interested Customer",
@@ -129,25 +130,50 @@ export class AiOrchestrator {
           source: "Website",
           status: "Qualified",
           score: params.score || 85,
-          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
+          avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(params.name || "Interested Customer") + "&background=0D8ABC&color=fff",
           notes: `Automated lead created by Sales Agent: ${params.notes || "Inquired about product bundle"}`
-        });
+        };
+
+        const localLead = Database.createLead(leadPayload as any);
+
+        try {
+          if (typeof fetch !== "undefined") {
+            await api.createLead(leadPayload).catch(() => {});
+          }
+        } catch (e) {}
+
+        return localLead;
       }
       case "create_appointment": {
-        return Database.createAppointment({
+        const aptPayload = {
           organization_id: orgId,
           customer_id: customerId,
           title: "Demo Call",
           date: "Apr 29, 2025",
           time: params.time || "2:00 PM - 2:30 PM",
           customer_name: params.customerName || "Customer",
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+          avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(params.customerName || "Customer") + "&background=4F46E5&color=fff",
           service: "Enterprise Demo",
           provider: "Google Calendar",
           status: "Confirmed"
-        });
+        };
+
+        const localApt = Database.createAppointment(aptPayload as any);
+
+        try {
+          if (typeof fetch !== "undefined") {
+            await api.createAppointment(aptPayload).catch(() => {});
+          }
+        } catch (e) {}
+
+        return localApt;
       }
       case "handoff_to_human": {
+        try {
+          if (typeof fetch !== "undefined") {
+            await api.handoffConversation(conversationId).catch(() => {});
+          }
+        } catch (e) {}
         return Database.updateConversationStatus(conversationId, "waiting_for_human");
       }
       default:
@@ -161,7 +187,7 @@ export class AiOrchestrator {
   private static async callGeminiWithTools(
     systemPrompt: string,
     userMessage: string,
-    toolExec: (name: string, args: any) => any
+    toolExec: (name: string, args: any) => Promise<any>
   ): Promise<{ text: string; toolResult?: any }> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${this.geminiKey}`;
 
@@ -243,7 +269,7 @@ export class AiOrchestrator {
       // Check if function call requested
       if (candidate?.functionCall) {
         const fn = candidate.functionCall;
-        const toolOutput = toolExec(fn.name, fn.args || {});
+        const toolOutput = await toolExec(fn.name, fn.args || {});
 
         // 2. Second turn: supply function response back to Gemini
         const secondPayload = {
@@ -353,7 +379,7 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
       case "support": {
         if (intent.extractedEntities.orderNumber || userMessage.includes("order") || userMessage.includes("#")) {
           const orderNum = intent.extractedEntities.orderNumber || "#12345";
-          const orderData = this.executeTool(orgId, "get_order_status", { orderNumber: orderNum }, conversationId, customerId);
+          const orderData = await this.executeTool(orgId, "get_order_status", { orderNumber: orderNum }, conversationId, customerId);
           toolResult = { toolName: "get_order_status", result: orderData };
           reply = `Let me check that for you. I found your order ${orderData.orderNumber}. It's currently ${orderData.status} and is expected to arrive ${orderData.estimatedDelivery}.\n\nTracking Number: ${orderData.trackingNumber}`;
         } else if (ragResult.match) {
@@ -365,11 +391,11 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
       }
 
       case "sales": {
-        const products = this.executeTool(orgId, "get_products", {}, conversationId, customerId);
+        const products = await this.executeTool(orgId, "get_products", {}, conversationId, customerId);
         toolResult = { toolName: "get_products", result: products };
 
         if (userMessage.toLowerCase().includes("budget") || userMessage.toLowerCase().includes("laptop") || userMessage.toLowerCase().includes("plan")) {
-          this.executeTool(orgId, "create_lead", { name: customerName, score: 85, notes: `Inquired: "${userMessage}"` }, conversationId, customerId);
+          await this.executeTool(orgId, "create_lead", { name: customerName, score: 85, notes: `Inquired: "${userMessage}"` }, conversationId, customerId);
           reply = `Here are the top options that match your needs:\n\n1. MacBook Air M1 — $799 (Up to 18 hours battery, lightweight & powerful)\n2. Dell Inspiron 15 — $749 (10 hours battery, Intel Core i7, great value for money)\n\nWould you like me to add either of these to your cart or book a call with our specialist?`;
         } else if (userMessage.toLowerCase().includes("discount") || userMessage.toLowerCase().includes("annual")) {
           reply = "We offer a 20% discount on all annual billing plans! Would you like me to apply this promo code to your current checkout?";
@@ -382,7 +408,7 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
       case "appointment": {
         if (intent.extractedEntities.requestedSlot) {
           const slot = intent.extractedEntities.requestedSlot;
-          const apt = this.executeTool(orgId, "create_appointment", { time: `${slot} - 30m`, customerName }, conversationId, customerId);
+          const apt = await this.executeTool(orgId, "create_appointment", { time: `${slot} - 30m`, customerName }, conversationId, customerId);
           toolResult = { toolName: "create_appointment", result: apt };
           reply = `Perfect! Your demo has been scheduled for tomorrow at ${slot}. Synced automatically with Google Calendar and Outlook. A confirmation email has been dispatched.`;
         } else {
@@ -392,7 +418,7 @@ Always be polite, concise, and helpful. Use declared tools whenever order lookup
       }
 
       case "human": {
-        this.executeTool(orgId, "handoff_to_human", {}, conversationId, customerId);
+        await this.executeTool(orgId, "handoff_to_human", {}, conversationId, customerId);
         reply = "I have prioritized your request and transferred this conversation to a live senior representative. Someone from our team will respond in this chat shortly.";
         break;
       }

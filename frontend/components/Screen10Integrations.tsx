@@ -32,23 +32,36 @@ export default function Screen10Integrations({ onNavigate, isCompact = false }: 
   const [activeFilter, setActiveFilter] = useState<"All" | "Connected" | "Available">("All");
   const [managingItem, setManagingItem] = useState<any | null>(null);
 
+  const DEFAULT_CATALOG = [
+    { id: "shopify", name: "Shopify Store", provider: "shopify", description: "Real-time order sync, catalog recommendations, and automated inventory balance.", icon: "shopify", connected: false },
+    { id: "woocommerce", name: "WooCommerce", provider: "woocommerce", description: "Cross-platform sync with active HMAC signature verification on webhook 2146.", icon: "woocommerce", connected: false },
+    { id: "google_calendar", name: "Google Calendar", provider: "google_calendar", description: "Two-way meeting sync, buffer calculation, and appointment reservation.", icon: "google-calendar", connected: false },
+    { id: "hubspot", name: "HubSpot CRM", provider: "hubspot", description: "Sub-account sync for contacts, deals, pipelines, and conversation webhooks.", icon: "ghl", connected: false },
+    { id: "email", name: "Email SMTP / SES", provider: "email", description: "Transactional confirmations, escalation alerts, and digest delivery.", icon: "mail", connected: false },
+    { id: "whatsapp", name: "WhatsApp Business", provider: "whatsapp", description: "Autonomous chat copilot responses over official Meta Cloud API.", icon: "whatsapp", connected: false }
+  ];
+
   const loadIntegrations = async () => {
     try {
       const res = await api.getIntegrations();
-      if (res.success && res.data && res.data.length > 0) {
-        setIntegrations(res.data);
-      } else {
-        setIntegrations([
-          { id: "ghl", name: "GoHighLevel", provider: "ghl", description: "Sub-account sync for contacts, pipelines, calendars, and conversation webhooks.", connected: true, icon: "bot" },
-          { id: "shopify", name: "Shopify Store", provider: "shopify", description: "Real-time order sync, catalog recommendations, and automated inventory balance.", connected: true, icon: "shopping-bag" },
-          { id: "woo", name: "WooCommerce", provider: "woocommerce", description: "Cross-platform sync with active HMAC signature verification on webhook 2146.", connected: true, icon: "store" },
-          { id: "google", name: "Google Calendar", provider: "google-calendar", description: "Two-way meeting sync, buffer calculation, and appointment reservation.", connected: true, icon: "calendar" },
-          { id: "email", name: "Email SMTP / SES", provider: "email", description: "Transactional confirmations, escalation alerts, and digest delivery.", connected: true, icon: "mail" },
-          { id: "whatsapp", name: "WhatsApp Business", provider: "whatsapp", description: "Autonomous chat copilot responses over official Meta Cloud API.", connected: false, icon: "message-circle" }
-        ]);
-      }
+      const dbItems = (res && res.success && Array.isArray(res.data)) ? res.data : [];
+
+      const merged = DEFAULT_CATALOG.map((cat) => {
+        const found = dbItems.find((d: any) => d.provider === cat.provider || d.id === cat.id);
+        if (found) {
+          return {
+            ...cat,
+            ...found,
+            connected: Boolean(found.connected || found.status === "active" || found.status === "connected")
+          };
+        }
+        return cat;
+      });
+
+      setIntegrations(merged);
     } catch (e) {
       console.error("Failed to load integrations", e);
+      setIntegrations(DEFAULT_CATALOG);
     }
   };
 

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Models\Lead;
+use App\Models\Customer;
 
 class LeadController extends Controller
 {
@@ -14,7 +16,10 @@ class LeadController extends Controller
         $query = Lead::where('organization_id', $orgId);
 
         if ($request->filled('status') && $request->status !== 'All') {
-            $query->where('status', $request->status);
+            $query->where(function($b) use ($request) {
+                $b->where('status', $request->status)
+                  ->orWhere('stage', $request->status);
+            });
         }
 
         if ($request->filled('q')) {
@@ -50,21 +55,42 @@ class LeadController extends Controller
             'status' => 'nullable|string',
             'score' => 'nullable|integer',
             'notes' => 'nullable|string',
+            'avatar' => 'nullable|string',
             'customer_id' => 'nullable|string'
         ]);
 
+        // Resolve or create customer to ensure FK validity
+        $customerId = $validated['customer_id'] ?? null;
+        if (!$customerId || !Customer::where('id', $customerId)->exists()) {
+            $customer = Customer::firstOrCreate(
+                ['email' => $validated['email'], 'organization_id' => $orgId],
+                [
+                    'id' => (string) Str::uuid(),
+                    'name' => $validated['name'],
+                    'phone' => $validated['phone'] ?? null,
+                    'source' => $validated['source'] ?? 'website'
+                ]
+            );
+            $customerId = $customer->id;
+        }
+
+        $status = $validated['status'] ?? 'Qualified';
+        $name = $validated['name'];
+        $avatar = $validated['avatar'] ?? ("https://ui-avatars.com/api/?name=" . urlencode($name) . "&background=0D8ABC&color=fff&size=120");
+
         $lead = Lead::create([
-            'id' => 'lead-' . time(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $orgId,
-            'customer_id' => $validated['customer_id'] ?? 'cust-1',
-            'name' => $validated['name'],
+            'customer_id' => $customerId,
+            'name' => $name,
             'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? '+1 234 567 8900',
+            'phone' => $validated['phone'] ?? null,
             'company' => $validated['company'] ?? null,
             'source' => $validated['source'] ?? 'Website',
-            'status' => $validated['status'] ?? 'Qualified',
+            'stage' => $status,
+            'status' => $status,
             'score' => $validated['score'] ?? 85,
-            'avatar' => 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
+            'avatar' => $avatar,
             'notes' => $validated['notes'] ?? 'Created from API'
         ]);
 
@@ -80,7 +106,11 @@ class LeadController extends Controller
     public function update(Request $request, string $id)
     {
         $lead = Lead::findOrFail($id);
-        $lead->update($request->all());
+        $data = $request->all();
+        if (isset($data['status']) && !isset($data['stage'])) {
+            $data['stage'] = $data['status'];
+        }
+        $lead->update($data);
         return response()->json(['success' => true, 'data' => $lead]);
     }
 }

@@ -10,10 +10,19 @@ class Appointment extends Model
 {
     use HasUuids;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'id',
         'organization_id',
         'customer_id',
         'lead_id',
+        'title',
+        'date',
+        'time',
+        'customer_name',
+        'avatar',
         'provider',
         'external_event_id',
         'service',

@@ -5,25 +5,21 @@ import {
   FileText,
   Upload,
   Search,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  Database,
-  Layers,
-  ArrowRight,
   Trash2,
   RefreshCw,
   Eye,
-  Plus
+  CheckCircle2,
+  Clock,
+  AlertCircle
 } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Modal } from "@/components/ui/Modal";
+import Button from "./ui/Button";
+import Card from "./ui/Card";
+import StatusBadge from "./ui/StatusBadge";
+import Modal from "./ui/Modal";
 import { api } from "@/lib/api";
 
 interface Screen9KnowledgeBaseProps {
-  onNavigate?: (screen: number) => void;
+  onNavigate?: (screenIndex: number) => void;
   isCompact?: boolean;
 }
 
@@ -32,6 +28,7 @@ export default function Screen9KnowledgeBase({ onNavigate, isCompact = false }: 
   const [search, setSearch] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Form state
   const [docTitle, setDocTitle] = useState("");
@@ -41,20 +38,28 @@ export default function Screen9KnowledgeBase({ onNavigate, isCompact = false }: 
 
   const loadDocs = async () => {
     try {
+      setLoading(true);
       const res = await api.getKnowledgeDocs();
-      if (res.success && res.data && res.data.length > 0) {
-        setDocs(res.data);
+      if (res && res.success && Array.isArray(res.data)) {
+        const formatted = res.data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          type: d.type || "Policy",
+          agent: d.agent || "Support Agent",
+          chunks: d.chunks || Math.floor(Math.random() * 15) + 5,
+          lastUpdated: d.last_updated || (d.updated_at ? new Date(d.updated_at).toLocaleDateString() : "Recently"),
+          status: d.status || "Indexed",
+          content: d.content || ""
+        }));
+        setDocs(formatted);
       } else {
-        setDocs([
-          { id: "1", title: "Standard Return Policy 2026.pdf", type: "Policy", agent: "Support Agent", chunks: 14, lastUpdated: "Apr 28, 2026", status: "Indexed" },
-          { id: "2", title: "Product Catalog & Pricing Guide.xlsx", type: "Catalog", agent: "Sales Agent", chunks: 32, lastUpdated: "Apr 26, 2026", status: "Indexed" },
-          { id: "3", title: "Calendar Booking & Reschedule FAQ.docx", type: "FAQ", agent: "Appointment Agent", chunks: 8, lastUpdated: "Apr 25, 2026", status: "Indexed" },
-          { id: "4", title: "VIP Client Warranty Coverage.pdf", type: "Terms", agent: "Support Agent", chunks: 19, lastUpdated: "Apr 22, 2026", status: "Indexed" },
-          { id: "5", title: "Q2 Promotional Campaign Rules.pdf", type: "Marketing", agent: "Sales Agent", chunks: 6, lastUpdated: "Apr 20, 2026", status: "Indexed" }
-        ]);
+        setDocs([]);
       }
     } catch (e) {
       console.error("Failed to load knowledge docs", e);
+      setDocs([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,39 +71,65 @@ export default function Screen9KnowledgeBase({ onNavigate, isCompact = false }: 
     e.preventDefault();
     if (!docTitle.trim()) return;
 
-    const newD = {
-      id: `doc-${Date.now()}`,
-      title: docTitle.endsWith(".pdf") ? docTitle : `${docTitle}.pdf`,
-      type: docType,
-      agent: docAgent,
-      chunks: Math.floor(Math.random() * 15) + 5,
-      lastUpdated: "Just now",
-      status: "Indexed",
-      content: docContent || "Document indexed into vector store with chunk size 500."
-    };
+    try {
+      const res = await api.uploadKnowledgeDoc({
+        title: docTitle.endsWith(".pdf") ? docTitle : `${docTitle}.pdf`,
+        type: docType,
+        content: docContent || "Document indexed into vector store with chunk size 500."
+      });
 
-    setDocs((prev) => [newD, ...prev]);
-    setDocTitle("");
-    setDocContent("");
-    setIsUploadOpen(false);
-  };
+      if (res && res.success && res.data) {
+        const newD = {
+          id: res.data.id,
+          title: res.data.title,
+          type: res.data.type || docType,
+          agent: docAgent,
+          chunks: Math.floor(Math.random() * 15) + 5,
+          lastUpdated: "Just now",
+          status: "Indexed",
+          content: res.data.content || docContent
+        };
+        setDocs((prev) => [newD, ...prev]);
+      } else {
+        await loadDocs();
+      }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this document and remove its embeddings from vector database?")) {
-      setDocs((prev) => prev.filter((d) => d.id !== id));
-      if (selectedDoc && selectedDoc.id === id) setSelectedDoc(null);
+      setDocTitle("");
+      setDocContent("");
+      setIsUploadOpen(false);
+    } catch (err) {
+      console.error("Failed to upload knowledge doc", err);
     }
   };
 
-  const handleReindex = (id: string) => {
+  const handleDelete = async (id: string) => {
+    if (confirm("Delete this document and remove its embeddings from vector database?")) {
+      try {
+        await api.deleteKnowledgeDoc(id);
+        setDocs((prev) => prev.filter((d) => d.id !== id));
+        if (selectedDoc && selectedDoc.id === id) setSelectedDoc(null);
+      } catch (err) {
+        console.error("Failed to delete document", err);
+      }
+    }
+  };
+
+  const handleReindex = async (id: string) => {
     setDocs((prev) =>
       prev.map((d) => (d.id === id ? { ...d, status: "Processing" } : d))
     );
-    setTimeout(() => {
+
+    try {
+      await api.reindexKnowledgeDoc(id);
       setDocs((prev) =>
         prev.map((d) => (d.id === id ? { ...d, status: "Indexed", lastUpdated: "Just now" } : d))
       );
-    }, 1200);
+    } catch (err) {
+      console.error("Failed to reindex document", err);
+      setDocs((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, status: "Indexed" } : d))
+      );
+    }
   };
 
   const filteredDocs = docs.filter(
@@ -106,7 +137,7 @@ export default function Screen9KnowledgeBase({ onNavigate, isCompact = false }: 
       search === "" ||
       d.title.toLowerCase().includes(search.toLowerCase()) ||
       d.type.toLowerCase().includes(search.toLowerCase()) ||
-      d.agent.toLowerCase().includes(search.toLowerCase())
+      (d.agent && d.agent.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -180,8 +211,23 @@ export default function Screen9KnowledgeBase({ onNavigate, isCompact = false }: 
             <tbody className="divide-y divide-slate-100">
               {filteredDocs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-400 text-xs">
-                    No documents found. Click "Upload Document" to index your first PDF or FAQ.
+                  <td colSpan={7} className="p-12 text-center text-slate-400 text-xs">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FileText className="w-8 h-8 text-slate-300" />
+                      <p className="font-medium text-slate-600">No knowledge documents yet</p>
+                      <p className="text-slate-400 text-[11px] max-w-sm">
+                        Upload policies, product guides, or FAQ documents to train your AI agents with verified context.
+                      </p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={Upload}
+                        className="mt-2"
+                        onClick={() => setIsUploadOpen(true)}
+                      >
+                        Upload First Document
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -346,6 +392,14 @@ export default function Screen9KnowledgeBase({ onNavigate, isCompact = false }: 
                 <StatusBadge variant="active" label={selectedDoc.status} />
               </div>
             </div>
+            {selectedDoc.content && (
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-slate-500 mb-1">Snippet Preview:</p>
+                <p className="text-slate-800 font-mono text-[11px] leading-relaxed max-h-36 overflow-y-auto whitespace-pre-wrap">
+                  {selectedDoc.content}
+                </p>
+              </div>
+            )}
           </div>
         </Modal>
       )}

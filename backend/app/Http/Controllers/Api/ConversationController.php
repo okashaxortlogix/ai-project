@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Customer;
+use App\Models\Organization;
 use App\Services\Agents\AgentRouter;
 
 class ConversationController extends Controller
@@ -42,14 +44,14 @@ class ConversationController extends Controller
         ]);
 
         $conv = Conversation::create([
-            'id' => 'conv-' . time(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $orgId,
             'customer_id' => $validated['customer_id'],
             'channel' => $validated['channel'] ?? 'web',
             'status' => 'active',
             'assigned_agent' => $validated['assigned_agent'] ?? 'support',
             'last_message' => 'Conversation initialized',
-            'last_message_at' => now()->format('h:i A'),
+            'last_message_at' => now(),
         ]);
 
         return response()->json(['success' => true, 'data' => $conv], 201);
@@ -77,13 +79,15 @@ class ConversationController extends Controller
         $conv = Conversation::with('customer')->findOrFail($id);
         $sender = $validated['sender'] ?? 'customer';
 
-        // 1. Store Customer Message
+        // 1. Store Customer Message with unique UUID
         $custMsg = Message::create([
-            'id' => 'm-' . time(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $conv->organization_id,
             'conversation_id' => $conv->id,
+            'sender_type' => $sender === 'customer' ? 'customer' : 'human',
             'sender' => $sender,
             'content' => $validated['content'],
+            'content_type' => 'text',
             'timestamp' => now()->format('h:i A')
         ]);
 
@@ -120,16 +124,22 @@ class ConversationController extends Controller
             'grounded_source' => !empty($ragChunks) ? $ragChunks[0]['source'] : null,
         ];
 
-        // 3. Store Agent Message
+        // 3. Store Agent Message with unique UUID
         $agentMsg = Message::create([
-            'id' => 'm-' . (time() + 1),
+            'id' => (string) Str::uuid(),
             'organization_id' => $conv->organization_id,
             'conversation_id' => $conv->id,
+            'sender_type' => 'agent',
             'sender' => 'agent',
             'agent_type' => $aiResponse['agent_type'] ?? 'support',
             'content' => $aiResponse['reply'],
+            'content_type' => 'text',
             'timestamp' => now()->format('h:i A'),
             'metadata' => [
+                'toolExecuted' => $aiResponse['tool_executed'] ?? null,
+                'groundedSource' => $aiResponse['grounded_source'] ?? null
+            ],
+            'metadata_json' => [
                 'toolExecuted' => $aiResponse['tool_executed'] ?? null,
                 'groundedSource' => $aiResponse['grounded_source'] ?? null
             ]
@@ -137,7 +147,7 @@ class ConversationController extends Controller
 
         $conv->update([
             'last_message' => $aiResponse['reply'],
-            'last_message_at' => now()->format('h:i A'),
+            'last_message_at' => now(),
             'assigned_agent' => $aiResponse['agent_type'] ?? $conv->assigned_agent
         ]);
 
@@ -160,11 +170,13 @@ class ConversationController extends Controller
         ]);
 
         Message::create([
-            'id' => 'm-' . time(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $conv->organization_id,
             'conversation_id' => $conv->id,
+            'sender_type' => 'system',
             'sender' => 'system',
             'content' => 'Conversation escalated to human agent by request.',
+            'content_type' => 'text',
             'timestamp' => now()->format('h:i A')
         ]);
 
@@ -174,20 +186,80 @@ class ConversationController extends Controller
     public function resolve(string $id)
     {
         $conv = Conversation::findOrFail($id);
-        $conv->update(['status' => 'resolved']);
+        $conv->update([
+            'status' => 'resolved',
+            'resolved_at' => now()
+        ]);
         return response()->json(['success' => true, 'data' => $conv]);
     }
 
     public function getWidgetConfig(string $orgSlug)
     {
+        $org = Organization::where('slug', $orgSlug)->first();
+
         return response()->json([
             'success' => true,
             'data' => [
-                'title' => 'AI Conversation & Sales Suite',
+                'title' => $org ? $org->name : 'AI Conversation & Sales Suite',
                 'welcomeMessage' => 'Hello! How can we assist you today?',
                 'primaryColor' => '#1677FF',
                 'agents' => ['support', 'sales', 'appointment']
             ]
         ]);
+    }
+
+    public function startWidgetConversation(Request $request)
+    {
+        $orgId = $request->header('X-Organization-Id', 'org-acme-1');
+        $validated = $request->validate([
+            'customer_name' => 'nullable|string',
+            'customer_email' => 'nullable|email',
+            'channel' => 'nullable|string'
+        ]);
+
+        $customer = Customer::create([
+            'id' => (string) Str::uuid(),
+            'organization_id' => $orgId,
+            'name' => $validated['customer_name'] ?? 'Website Visitor',
+            'email' => $validated['customer_email'] ?? null,
+            'source' => 'web_widget'
+        ]);
+
+        $conv = Conversation::create([
+            'id' => (string) Str::uuid(),
+            'organization_id' => $orgId,
+            'customer_id' => $customer->id,
+            'channel' => $validated['channel'] ?? 'web',
+            'status' => 'active',
+            'assigned_agent' => 'support',
+            'last_message' => 'Hello! How can I assist you today?',
+            'last_message_at' => now()
+        ]);
+
+        $welcomeMsg = Message::create([
+            'id' => (string) Str::uuid(),
+            'organization_id' => $orgId,
+            'conversation_id' => $conv->id,
+            'sender_type' => 'agent',
+            'sender' => 'agent',
+            'agent_type' => 'support',
+            'content' => 'Hello! How can I assist you today?',
+            'content_type' => 'text',
+            'timestamp' => now()->format('h:i A')
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'conversation' => $conv,
+                'customer' => $customer,
+                'welcomeMessage' => $welcomeMsg
+            ]
+        ], 201);
+    }
+
+    public function sendWidgetMessage(Request $request, string $id)
+    {
+        return $this->sendMessage($request, $id);
     }
 }

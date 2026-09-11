@@ -11,13 +11,19 @@ class Conversation extends Model
 {
     use HasUuids;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'id',
         'organization_id',
         'customer_id',
         'channel',
         'status',
         'assigned_user_id',
         'active_agent_id',
+        'assigned_agent',
+        'last_message',
         'external_thread_id',
         'metadata_json',
         'started_at',

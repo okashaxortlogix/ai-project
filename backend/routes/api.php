@@ -75,6 +75,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/knowledge/documents', [KnowledgeController::class, 'index']);
         Route::post('/knowledge/documents', [KnowledgeController::class, 'store']);
         Route::get('/knowledge/documents/{document}', [KnowledgeController::class, 'show']);
+        Route::patch('/knowledge/documents/{document}', [KnowledgeController::class, 'update']);
         Route::delete('/knowledge/documents/{document}', [KnowledgeController::class, 'destroy']);
         Route::post('/knowledge/documents/{document}/reindex', [KnowledgeController::class, 'reindex']);
         Route::post('/knowledge/query', [KnowledgeController::class, 'semanticQuery']);
@@ -120,29 +121,8 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    // Public / Direct Test E-Commerce Endpoints
-    Route::prefix('woocommerce')->group(function () {
-        Route::get('/status', [WooCommerceController::class, 'status']);
-        Route::get('/products', [WooCommerceController::class, 'getProducts']);
-        Route::post('/products', [WooCommerceController::class, 'createProduct']);
-        Route::get('/products/{id}', [WooCommerceController::class, 'getProduct']);
-        Route::get('/orders', [WooCommerceController::class, 'getOrders']);
-        Route::post('/orders', [WooCommerceController::class, 'createOrder']);
-        Route::get('/orders/{id}', [WooCommerceController::class, 'getOrder']);
-        Route::post('/webhook', [WooCommerceController::class, 'handleWebhook']);
-    });
-
-    Route::prefix('shopify')->group(function () {
-        Route::get('/status', [ShopifyController::class, 'status']);
-        Route::get('/products', [ShopifyController::class, 'getProducts']);
-        Route::post('/products', [ShopifyController::class, 'createProduct']);
-        Route::get('/products/{id}', [ShopifyController::class, 'getProduct']);
-        Route::get('/orders', [ShopifyController::class, 'getOrders']);
-        Route::post('/orders', [ShopifyController::class, 'createOrder']);
-        Route::get('/orders/{id}', [ShopifyController::class, 'getOrder']);
-        Route::post('/webhook', [ShopifyController::class, 'handleWebhook']);
-    });
-
-    // Webhooks
+    // Public Dedicated Webhooks & Callback Endpoints
+    Route::post('/woocommerce/webhook', [WooCommerceController::class, 'handleWebhook']);
+    Route::post('/shopify/webhook', [ShopifyController::class, 'handleWebhook']);
     Route::post('/webhooks/{provider}', [WebhookController::class, 'handle']);
 });
