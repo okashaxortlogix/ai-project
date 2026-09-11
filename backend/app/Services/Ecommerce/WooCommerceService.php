@@ -16,7 +16,7 @@ class WooCommerceService
     protected string $version;
     protected bool $verifySsl;
     protected int $timeout;
-    protected $client = null;
+    protected mixed $client = null;
 
     public function __construct(?array $config = null)
     {

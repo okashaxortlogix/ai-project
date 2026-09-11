@@ -75,6 +75,11 @@ namespace Illuminate\Support\Facades {
         public static function timeout(int $seconds): self { return new self; }
         public static function withHeaders(array $headers): self { return new self; }
         public static function withBasicAuth(string $username, string $password): self { return new self; }
+        public static function withoutVerifying(): self { return new self; }
+        public function withoutVerifying(): self { return $this; }
+        public function timeout(int $seconds): self { return $this; }
+        public function withHeaders(array $headers): self { return $this; }
+        public function withBasicAuth(string $username, string $password): self { return $this; }
         public function get(string $url, array|string|null $query = null): \Illuminate\Http\Client\Response { return new \Illuminate\Http\Client\Response; }
         public function post(string $url, array $data = []): \Illuminate\Http\Client\Response { return new \Illuminate\Http\Client\Response; }
         public function put(string $url, array $data = []): \Illuminate\Http\Client\Response { return new \Illuminate\Http\Client\Response; }
@@ -116,11 +121,25 @@ namespace Illuminate\Foundation\Http\Middleware {
     }
 }
 
+namespace Illuminate\Database\Eloquent\Relations {
+    class BelongsTo {}
+    class HasMany {}
+    class HasOne {}
+}
+
+namespace Illuminate\Contracts\Auth {
+    interface Authenticatable {}
+}
+
+namespace Illuminate\Contracts\Auth\Access {
+    interface Authorizable {}
+}
+
 namespace Illuminate\Database\Eloquent {
     class Model {
-        public function belongsTo(string $related, ?string $foreignKey = null, ?string $ownerKey = null, ?string $relation = null): mixed { return null; }
-        public function hasMany(string $related, ?string $foreignKey = null, ?string $localKey = null): mixed { return null; }
-        public function hasOne(string $related, ?string $foreignKey = null, ?string $localKey = null): mixed { return null; }
+        public function belongsTo(string $related, ?string $foreignKey = null, ?string $ownerKey = null, ?string $relation = null): \Illuminate\Database\Eloquent\Relations\BelongsTo|mixed { return new \Illuminate\Database\Eloquent\Relations\BelongsTo; }
+        public function hasMany(string $related, ?string $foreignKey = null, ?string $localKey = null): \Illuminate\Database\Eloquent\Relations\HasMany|mixed { return new \Illuminate\Database\Eloquent\Relations\HasMany; }
+        public function hasOne(string $related, ?string $foreignKey = null, ?string $localKey = null): \Illuminate\Database\Eloquent\Relations\HasOne|mixed { return new \Illuminate\Database\Eloquent\Relations\HasOne; }
         public static function find(mixed $id): ?static { return null; }
         public static function create(array $attributes = []): static { return new static; }
         public static function where(string $column, mixed $operator = null, mixed $value = null): mixed { return null; }
@@ -128,7 +147,10 @@ namespace Illuminate\Database\Eloquent {
 }
 
 namespace Illuminate\Foundation\Auth {
-    class User extends \Illuminate\Database\Eloquent\Model {
+    class User extends \Illuminate\Database\Eloquent\Model implements 
+        \Illuminate\Contracts\Auth\Authenticatable,
+        \Illuminate\Contracts\Auth\Access\Authorizable {
+        use \Laravel\Sanctum\HasApiTokens, \Illuminate\Database\Eloquent\Factories\HasFactory, \Illuminate\Notifications\Notifiable;
     }
 }
 
