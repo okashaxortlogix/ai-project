@@ -140,6 +140,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders', [ShopifyController::class, 'getOrders']);
         Route::post('/orders', [ShopifyController::class, 'createOrder']);
         Route::get('/orders/{id}', [ShopifyController::class, 'getOrder']);
+        Route::post('/webhook', [ShopifyController::class, 'handleWebhook']);
     });
 
     // Webhooks

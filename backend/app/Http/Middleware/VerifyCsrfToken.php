@@ -13,8 +13,11 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'api/v1/woocommerce/webhook',
+        'api/v1/shopify/webhook',
         'api/v1/webhooks/*',
         'v1/woocommerce/webhook',
+        'v1/shopify/webhook',
         'woocommerce/webhook',
+        'shopify/webhook',
     ];
 }

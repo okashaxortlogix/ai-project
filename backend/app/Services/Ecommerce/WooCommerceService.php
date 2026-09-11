@@ -139,6 +139,155 @@ class WooCommerceService
     }
 
     /**
+     * Find a product or variation by SKU on WooCommerce
+     */
+    public function findProductBySku(string $sku): ?array
+    {
+        try {
+            $products = $this->getProducts(['sku' => $sku]);
+            if (!empty($products[0])) {
+                return $products[0];
+            }
+
+            // Fallback: search across products
+            $searchResults = $this->getProducts(['search' => $sku, 'per_page' => 20]);
+            foreach ($searchResults as $product) {
+                if (isset($product['sku']) && strcasecmp(trim($product['sku']), trim($sku)) === 0) {
+                    return $product;
+                }
+            }
+        } catch (Exception $e) {
+            Log::error("WooCommerceService::findProductBySku failed for SKU {$sku}: " . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Update stock level for a WooCommerce product
+     */
+    public function updateStock(int $productId, int $newQuantity): array
+    {
+        return $this->sendRequest('put', "products/{$productId}", [
+            'manage_stock' => true,
+            'stock_quantity' => $newQuantity
+        ]);
+    }
+
+    /**
+     * Deduct inventory by SKU on WooCommerce (triggered by Shopify order)
+     */
+    public function deductInventoryBySku(string $sku, int $quantity = 1): array
+    {
+        $product = $this->findProductBySku($sku);
+        if (!$product) {
+            return [
+                'success' => false,
+                'sku' => $sku,
+                'message' => "SKU '{$sku}' not found in WooCommerce store catalog."
+            ];
+        }
+
+        $productId = (int)$product['id'];
+        $currentStock = isset($product['stock_quantity']) ? (int)$product['stock_quantity'] : 0;
+        $newStock = max(0, $currentStock - $quantity);
+
+        try {
+            $updated = $this->updateStock($productId, $newStock);
+            return [
+                'success' => true,
+                'sku' => $sku,
+                'product_id' => $productId,
+                'product_name' => $product['name'] ?? '',
+                'deducted' => $quantity,
+                'previous_stock' => $currentStock,
+                'new_stock' => $newStock,
+                'response' => $updated
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'sku' => $sku,
+                'product_id' => $productId,
+                'message' => "Failed to update WooCommerce stock for SKU '{$sku}': " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Fetch webhooks list from WooCommerce
+     */
+    public function getWebhooks(): array
+    {
+        return $this->sendRequest('get', 'webhooks');
+    }
+
+    /**
+     * Create a webhook in WooCommerce
+     */
+    public function createWebhook(array $data): array
+    {
+        return $this->sendRequest('post', 'webhooks', $data);
+    }
+
+    /**
+     * Update an existing webhook in WooCommerce
+     */
+    public function updateWebhook(int $id, array $data): array
+    {
+        return $this->sendRequest('put', "webhooks/{$id}", $data);
+    }
+
+    /**
+     * Sync or create the delivery URL for WooCommerce order webhook
+     */
+    public function syncWebhookUrl(string $deliveryUrl, string $secret = '2146'): array
+    {
+        try {
+            $webhooks = $this->getWebhooks();
+            foreach ($webhooks as $hook) {
+                if (($hook['topic'] ?? '') === 'order.created') {
+                    $updated = $this->updateWebhook((int)$hook['id'], [
+                        'delivery_url' => $deliveryUrl,
+                        'secret' => $secret,
+                        'status' => 'active'
+                    ]);
+                    return [
+                        'success' => true,
+                        'action' => 'updated',
+                        'webhook_id' => $hook['id'],
+                        'delivery_url' => $deliveryUrl,
+                        'data' => $updated
+                    ];
+                }
+            }
+
+            // Create new if none exists
+            $created = $this->createWebhook([
+                'name' => 'Cross-Platform Inventory Sync',
+                'topic' => 'order.created',
+                'delivery_url' => $deliveryUrl,
+                'secret' => $secret,
+                'status' => 'active'
+            ]);
+
+            return [
+                'success' => true,
+                'action' => 'created',
+                'webhook_id' => $created['id'] ?? null,
+                'delivery_url' => $deliveryUrl,
+                'data' => $created
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'delivery_url' => $deliveryUrl,
+                'message' => 'Failed to sync WooCommerce webhook URL: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Centralized request dispatcher supporting Automattic client and Laravel Http facade
      */
     protected function sendRequest(string $method, string $endpoint, array $data = []): array

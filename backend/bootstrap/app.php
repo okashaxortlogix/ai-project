@@ -14,9 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Exclude cross-platform webhooks from CSRF token validation
         $middleware->validateCsrfTokens(except: [
             'api/v1/woocommerce/webhook',
+            'api/v1/shopify/webhook',
             'api/v1/webhooks/*',
             'v1/woocommerce/webhook',
+            'v1/shopify/webhook',
             'woocommerce/webhook',
+            'shopify/webhook',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
