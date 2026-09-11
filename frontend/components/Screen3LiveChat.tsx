@@ -551,15 +551,15 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
         </div>
       </div>
 
-      {/* Main 2-Column Split: Left Compact List (4 Cols) + Right Professional Chat Workspace (8 Cols) */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden min-h-0">
+      {/* Main 2-Column Split: Left Compact List (3 Cols) + Right Professional Chat Workspace (9 Cols) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 overflow-hidden min-h-0">
         
         {/* ========================================================================= */}
-        {/* LEFT COLUMN: Compact Conversation Inbox List (4 Cols - Reduced Space)     */}
+        {/* LEFT COLUMN: Compact Conversation Inbox List (3 Cols - Reduced Space)     */}
         {/* ========================================================================= */}
-        <div className="lg:col-span-4 xl:col-span-4 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden">
+        <div className="lg:col-span-3 xl:col-span-3 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden">
           {/* Top Filter Tabs & Search */}
-          <div className="p-3 border-b border-slate-100 space-y-2.5 bg-slate-50/40 shrink-0">
+          <div className="p-2.5 border-b border-slate-100 space-y-2 bg-slate-50/40 shrink-0">
             {/* Filter Pills */}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
               {[
@@ -572,7 +572,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === tab.id
                       ? "bg-white text-blue-700 border border-slate-200 shadow-2xs font-bold"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
@@ -585,13 +585,13 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
 
             {/* Search Input */}
             <div className="relative w-full">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search name, message, email..."
+                placeholder="Search inbox..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full pl-7 pr-2.5 py-1 text-[11px] bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
           </div>
@@ -599,10 +599,10 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
           {/* Conversation List Feed */}
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
             {filteredConversations.length === 0 ? (
-              <div className="p-8 text-center">
-                <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-slate-700">No conversations found</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Try a different search or filter</p>
+              <div className="p-6 text-center">
+                <MessageSquare className="w-7 h-7 text-slate-300 mx-auto mb-1.5" />
+                <p className="text-xs font-semibold text-slate-700">No conversations</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Change search or tab</p>
               </div>
             ) : (
               filteredConversations.map((conv) => {
@@ -611,20 +611,20 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                   <div
                     key={conv.id}
                     onClick={() => setSelectedId(conv.id)}
-                    className={`p-3.5 flex items-start justify-between gap-3 cursor-pointer transition-all border-l-4 ${
+                    className={`p-3 flex items-start justify-between gap-2 cursor-pointer transition-all border-l-4 ${
                       isSelected
                         ? "bg-blue-50/70 border-l-blue-600 shadow-2xs"
                         : "border-l-transparent hover:bg-slate-50/80"
                     }`}
                   >
-                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <div className="flex items-start gap-2 min-w-0 flex-1">
                       {/* Avatar with status indicator */}
                       <div className="relative shrink-0">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center text-[11px] font-bold shadow-2xs">
                           {conv.customer.charAt(0)}
                         </div>
                         <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-white ${
+                          className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ring-2 ring-white ${
                             conv.status === "human" ? "bg-amber-500" : "bg-emerald-500"
                           }`}
                         />
@@ -640,7 +640,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex items-center gap-1 mt-0.5">
                           <span
                             className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border uppercase tracking-wider shrink-0 ${getTagColor(
                               conv.agentLabel || conv.agent
@@ -650,11 +650,11 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                           </span>
                           <span className="text-[10px] text-slate-400">·</span>
                           <span className="text-[10px] text-slate-400 truncate">
-                            {conv.channel || "Web Chat"}
+                            {conv.channel || "Web"}
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-slate-500 truncate mt-1 leading-snug">
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5 leading-snug">
                           {conv.message}
                         </p>
                       </div>
@@ -667,9 +667,9 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
         </div>
 
         {/* ========================================================================================= */}
-        {/* RIGHT COLUMN: Professional Conversation Workspace (8 Cols - Increased Space & Real Chat) */}
+        {/* RIGHT COLUMN: Professional Conversation Workspace (9 Cols - Increased Space & Real Chat) */}
         {/* ========================================================================================= */}
-        <div className="lg:col-span-8 xl:col-span-8 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden">
+        <div className="lg:col-span-9 xl:col-span-9 bg-white border border-slate-200/90 rounded-2xl shadow-2xs flex flex-col overflow-hidden">
           {selectedConv ? (
             <>
               {/* 1. Professional Chat Header */}

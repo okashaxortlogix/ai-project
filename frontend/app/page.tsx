@@ -21,7 +21,6 @@ import ScreenTemplates from "@/components/ScreenTemplates";
 import ScreenAccountSetup from "@/components/ScreenAccountSetup";
 import ScreenDocumentation from "@/components/ScreenDocumentation";
 import ScreenAIAssistant from "@/components/ScreenAIAssistant";
-import FloatingWidget from "@/components/FloatingWidget";
 import EmbedCodeModal from "@/components/EmbedCodeModal";
 import DemoSimulatorModal from "@/components/DemoSimulatorModal";
 import { Product, productsList } from "@/lib/data";
@@ -495,9 +494,6 @@ export default function HomePage() {
         onRemove={handleRemoveFromCart}
         onClear={handleClearCart}
       />
-
-      {/* Floating Live Customer Chat Widget */}
-      <FloatingWidget />
 
       {/* Deploy Widget Embed Modal */}
       <EmbedCodeModal
