@@ -23,7 +23,8 @@ import {
   Shield,
   RefreshCw,
   Check,
-  ChevronDown
+  ChevronDown,
+  Trash2
 } from "lucide-react";
 import Modal from "./ui/Modal";
 import Button from "./ui/Button";
@@ -73,6 +74,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
 
   // New Chat Form
   const [newChatName, setNewChatName] = useState("");
@@ -400,6 +402,27 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!conversationToDelete) return;
+    const targetId = conversationToDelete;
+    setConversationToDelete(null);
+
+    const remaining = conversationList.filter((c) => c.id !== targetId);
+    setConversationList(remaining);
+
+    if (selectedId === targetId) {
+      if (remaining.length > 0) {
+        setSelectedId(remaining[0].id);
+      }
+    }
+
+    try {
+      await api.deleteConversation(targetId);
+    } catch (err) {
+      console.warn("Delete conversation error", err);
+    }
+  };
+
   const handleVoiceInput = () => {
     if (isListening) {
       stopSpeechRecognition();
@@ -611,7 +634,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                   <div
                     key={conv.id}
                     onClick={() => setSelectedId(conv.id)}
-                    className={`p-3 flex items-start justify-between gap-2 cursor-pointer transition-all border-l-4 ${
+                    className={`p-3 flex items-start justify-between gap-2 cursor-pointer transition-all border-l-4 group relative ${
                       isSelected
                         ? "bg-blue-50/70 border-l-blue-600 shadow-2xs"
                         : "border-l-transparent hover:bg-slate-50/80"
@@ -635,9 +658,22 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                           <span className="text-xs font-bold text-slate-900 truncate">
                             {conv.customer}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                            {conv.time}
-                          </span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-[10px] text-slate-400 font-medium group-hover:hidden">
+                              {conv.time}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConversationToDelete(conv.id);
+                              }}
+                              className="hidden group-hover:flex items-center justify-center w-4 h-4 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                              title="Delete conversation"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-1 mt-0.5">
@@ -743,6 +779,16 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="hidden sm:inline">Resolve</span>
+                  </button>
+
+                  {/* Delete Conversation */}
+                  <button
+                    onClick={() => setConversationToDelete(selectedConv.id)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+                    title="Delete conversation"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Delete</span>
                   </button>
                 </div>
               </div>
@@ -1053,6 +1099,37 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
             />
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!conversationToDelete}
+        onClose={() => setConversationToDelete(null)}
+        title="Delete Conversation"
+        subtitle="This conversation and its message transcript will be permanently removed."
+        maxWidth="sm"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setConversationToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleConfirmDelete}
+            >
+              Delete Permanently
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Are you sure you want to delete this conversation? All chat messages and transcripts will be permanently erased. This action cannot be undone.
+        </p>
       </Modal>
     </div>
   );

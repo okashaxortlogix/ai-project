@@ -904,6 +904,18 @@ export class Database {
     return conv;
   }
 
+  static deleteConversation(convId: string): boolean {
+    const db = Database.loadDB();
+    const initialLen = db.conversations.length;
+    db.conversations = db.conversations.filter((c) => c.id !== convId);
+    db.messages = db.messages.filter((m) => m.conversation_id !== convId);
+    if (db.conversations.length !== initialLen) {
+      Database.saveDB(db);
+      return true;
+    }
+    return false;
+  }
+
   static getLeads(orgId: string): DBLead[] {
     return Database.loadDB().leads.filter((l) => l.organization_id === orgId);
   }

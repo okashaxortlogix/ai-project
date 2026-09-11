@@ -127,8 +127,8 @@
       "channel": "web",
       "status": "waiting_for_human",
       "assigned_agent": "human",
-      "last_message": "Transferred to representative",
-      "last_message_at": "11:53 PM",
+      "last_message": "Conversation handed off to human support queue.",
+      "last_message_at": "01:21 AM",
       "created_at": "2026-09-11T18:53:23.652Z"
     },
     {
@@ -925,6 +925,14 @@
       "content": "Conversation handed off to human support queue.",
       "id": "m-1789141962399",
       "timestamp": "08:52 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-support-sandbox",
+      "sender": "system",
+      "content": "Conversation handed off to human support queue.",
+      "id": "m-1789158062680",
+      "timestamp": "01:21 AM"
     }
   ],
   "leads": [
@@ -1366,7 +1374,8 @@
       "category": "ecommerce",
       "connected": false,
       "icon": "store",
-      "status": "disconnected"
+      "status": "disconnected",
+      "last_synced_at": "2026-09-11T20:25:57.861Z"
     },
     {
       "id": "int-4",

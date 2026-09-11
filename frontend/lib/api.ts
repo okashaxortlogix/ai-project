@@ -120,6 +120,14 @@ export const api = {
     return res.json();
   },
 
+  async deleteConversation(conversationId: string) {
+    const res = await fetch(`${API_BASE}/conversations/${conversationId}`, {
+      method: "DELETE",
+      headers: getHeaders()
+    });
+    return res.json();
+  },
+
   // Leads
   async getLeads(status?: string, q?: string) {
     const params = new URLSearchParams();

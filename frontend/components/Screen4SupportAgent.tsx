@@ -18,7 +18,16 @@ import {
   Paperclip,
   Mic,
   RefreshCw,
-  Search
+  Search,
+  Star,
+  Zap,
+  TrendingUp,
+  ShieldCheck,
+  FileText,
+  Layers,
+  Bot,
+  UserCheck,
+  AlertCircle
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -74,7 +83,48 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Voice speech-to-text setup
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRec =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRec) {
+        setSpeechSupported(true);
+        const recognition = new SpeechRec();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setChatInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+          setIsListening(false);
+        };
+
+        recognition.onerror = () => setIsListening(false);
+        recognition.onend = () => setIsListening(false);
+
+        recognitionRef.current = recognition;
+      }
+    }
+  }, []);
+
+  const handleVoiceInput = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      if (recognitionRef.current) {
+        setIsListening(true);
+        recognitionRef.current.start();
+      }
+    }
+  };
 
   // Auto-scroll on new messages or generation updates
   useEffect(() => {
@@ -226,86 +276,453 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
         ))}
       </div>
 
-      {/* TAB 1: OVERVIEW matching Screen 7 */}
+      {/* TAB 1: OVERVIEW - ENTERPRISE SUPPORT OPERATIONS WORKBENCH */}
       {activeTab === "Overview" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Capabilities Card */}
-            <Card className="p-6">
-              <h2 className="text-sm font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
-                Capabilities
-              </h2>
-              <ul className="space-y-3 text-xs text-slate-700">
-                {[
-                  "Answer common questions",
-                  "Resolve support tickets",
-                  "Search knowledge base",
-                  "Hand over to human agent",
-                  "Automated live order tracking & delivery status"
-                ].map((cap, i) => (
-                  <li key={i} className="flex items-center gap-2.5">
-                    <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3 stroke-[2.5]" />
-                    </div>
-                    <span>{cap}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            {/* Knowledge Base Card */}
-            <Card className="p-6 flex flex-col justify-between">
+          {/* 1. Executive Performance KPIs Strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="p-4 flex items-center gap-3.5 border-slate-200/80 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
               <div>
-                <h2 className="text-sm font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
-                  Knowledge Base
-                </h2>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-[11px] text-slate-500 font-medium">Total Articles</div>
-                    <div className="text-2xl font-bold text-slate-900 mt-0.5">24</div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-slate-500 font-medium">Last Updated</div>
-                    <div className="text-xs font-semibold text-slate-700 mt-0.5">
-                      Apr 28, 2026
-                    </div>
-                  </div>
+                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Auto-Resolution
+                </div>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-xl font-extrabold text-slate-900">98.4%</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                    ↑ 3.2%
+                  </span>
                 </div>
               </div>
+            </Card>
 
-              <div className="pt-6 border-t border-slate-100 mt-4">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="w-full justify-center"
-                  icon={BookOpen}
-                  onClick={() => onNavigate?.(9)}
-                >
-                  Manage Knowledge Base
-                </Button>
+            <Card className="p-4 flex items-center gap-3.5 border-slate-200/80 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Avg First Response
+                </div>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-xl font-extrabold text-slate-900">0.8s</span>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                    Instant AI
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3.5 border-slate-200/80 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+                <Star className="w-5 h-5 fill-violet-500 text-violet-500" />
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  CSAT Rating
+                </div>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-xl font-extrabold text-slate-900">4.9 / 5.0</span>
+                  <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">
+                    98% High
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 flex items-center gap-3.5 border-slate-200/80 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                <Package className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Orders Tracked
+                </div>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-xl font-extrabold text-slate-900">412</span>
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                    Shopify Live
+                  </span>
+                </div>
               </div>
             </Card>
           </div>
 
-          {/* Performance & Quick Launch Row */}
-          <Card className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* 2. Live Support Operations Workbench (Interactive Chat + Order Grounding) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column: Embedded Interactive Support Copilot */}
+            <div className="lg:col-span-7">
+              <Card className="flex flex-col h-[580px] border-slate-200/80 shadow-sm">
+                {/* Copilot Header */}
+                <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                      <Headphones className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>Live Support Copilot</span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200">
+                          RAG Active
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Autonomous Agent Online
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        setMessages([
+                          {
+                            id: `reset-${Date.now()}`,
+                            sender: "agent",
+                            content: "Hello! How can I help you today with your order or shipping questions?",
+                            time: "Just now"
+                          }
+                        ])
+                      }
+                      className="text-xs h-7"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Interactive Prompt Chips */}
+                <div className="px-3.5 py-2 border-b border-slate-100 bg-white flex items-center gap-1.5 overflow-x-auto text-[11px]">
+                  <span className="text-slate-400 font-medium shrink-0">Try:</span>
+                  {[
+                    "Where is my order #12345?",
+                    "What is your 30-day return policy?",
+                    "Can I change my delivery address?"
+                  ].map((chip, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleFaqClick(chip)}
+                      className="shrink-0 px-2.5 py-1 bg-slate-100/80 hover:bg-blue-50 hover:text-blue-700 text-slate-600 rounded-full border border-slate-200/80 text-[11px] font-medium transition-colors cursor-pointer"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Message Transcript */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#F8FAFC]/60">
+                  {messages.map((m) => {
+                    const isAgent = m.sender === "agent";
+                    return (
+                      <div
+                        key={m.id}
+                        className={`flex gap-2.5 ${isAgent ? "justify-start" : "justify-end"}`}
+                      >
+                        {isAgent && (
+                          <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shrink-0 mt-0.5">
+                            <Headphones className="w-3.5 h-3.5" />
+                          </div>
+                        )}
+
+                        <div
+                          className={`max-w-[80%] rounded-2xl p-3 text-xs leading-relaxed shadow-2xs ${
+                            isAgent
+                              ? "bg-white border border-slate-200 text-slate-800 rounded-tl-xs"
+                              : "bg-blue-600 text-white rounded-tr-xs font-medium"
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{m.content}</p>
+                          {m.isStreaming && (
+                            <span className="inline-block w-1.5 h-3 ml-0.5 bg-blue-600 animate-pulse align-middle" />
+                          )}
+                          <div
+                            className={`text-[9px] mt-1 ${
+                              isAgent ? "text-slate-400" : "text-blue-200"
+                            }`}
+                          >
+                            {m.time}
+                          </div>
+                        </div>
+
+                        {!isAgent && (
+                          <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                            C
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {isTyping && (
+                    <div className="flex gap-2.5 justify-start">
+                      <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shrink-0">
+                        <Headphones className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-xs p-3 shadow-2xs flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></span>
+                        <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                        <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Interactive Input Form */}
+                <form
+                  onSubmit={handleSendMessage}
+                  className="p-3 border-t border-slate-200 bg-white flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Type an order question or test customer inquiry..."
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  />
+
+                  {speechSupported && (
+                    <button
+                      type="button"
+                      onClick={handleVoiceInput}
+                      className={`p-2 rounded-lg border transition-colors cursor-pointer ${
+                        isListening
+                          ? "bg-rose-50 border-rose-300 text-rose-600 animate-pulse"
+                          : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                      }`}
+                      title={isListening ? "Listening... click to stop" : "Speak message"}
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    disabled={!chatInput.trim() || isTyping}
+                    icon={Send}
+                  >
+                    Send
+                  </Button>
+                </form>
+              </Card>
+            </div>
+
+            {/* Right Column: Context & Fulfillment Grounding Deck */}
+            <div className="lg:col-span-5 space-y-4">
+              {/* Card 1: Real-Time Shopify Order Tracker */}
+              <Card className="p-4 border-slate-200/80 shadow-xs">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                      <Truck className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">Order #12345</div>
+                      <div className="text-[10px] text-slate-400 font-medium">Shopify Fulfillment Sync</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                    Out for Delivery
+                  </span>
+                </div>
+
+                {/* Timeline Stepper */}
+                <div className="py-3 px-1">
+                  <div className="relative pl-6 space-y-3.5 border-l-2 border-emerald-500">
+                    <div className="relative">
+                      <div className="absolute -left-[31px] top-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-2xs"></div>
+                      <div className="text-[11px] font-bold text-slate-800">Order Confirmed & Packed</div>
+                      <div className="text-[10px] text-slate-400">Yesterday, 2:30 PM • Warehouse A</div>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute -left-[31px] top-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-2xs"></div>
+                      <div className="text-[11px] font-bold text-slate-800">In Transit with FedEx Express</div>
+                      <div className="text-[10px] text-slate-400">Tracking: #FDX-994821 • Memphis Hub</div>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute -left-[31px] top-0.5 w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white ring-2 ring-blue-200 shadow-2xs"></div>
+                      <div className="text-[11px] font-bold text-blue-900">Out for Delivery</div>
+                      <div className="text-[10px] text-blue-700 font-medium">Expected Tomorrow by 2:00 PM</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <div className="text-[11px] text-slate-500">
+                    Destination: <span className="font-semibold text-slate-700">Springfield, IL</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsOrderModalOpen(true)}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                  >
+                    View Details <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              </Card>
+
+              {/* Card 2: Active RAG Knowledge Sources */}
+              <Card className="p-4 border-slate-200/80 shadow-xs">
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-slate-600" />
+                    <span className="text-xs font-bold text-slate-900">Grounded Knowledge Documents</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-500">3 Sources Synced</span>
+                </div>
+
+                <div className="space-y-2">
+                  {[
+                    { name: "Shipping_Delivery_Policy_2026.pdf", chunks: "14 chunks", conf: "99% match" },
+                    { name: "Return_Refund_SLA_Guidelines.docx", chunks: "9 chunks", conf: "98% match" },
+                    { name: "Shopify_Order_Lookup_Webhook.json", chunks: "Live API", conf: "Real-time" }
+                  ].map((doc, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2 bg-slate-50/80 rounded-lg border border-slate-200/60 flex items-center justify-between text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <BookOpen className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="font-medium text-slate-800 text-[11px] truncate">
+                          {doc.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] text-slate-400">{doc.chunks}</span>
+                        <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[9px] font-bold">
+                          {doc.conf}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Card 3: AI Safety Guardrails & Escalation Rules */}
+              <Card className="p-4 border-slate-200/80 shadow-xs bg-gradient-to-br from-white to-slate-50/50">
+                <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100 mb-2.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-slate-900">AI Guardrails & Human Handover</span>
+                </div>
+
+                <div className="space-y-2 text-[11px] text-slate-600">
+                  <div className="flex items-center justify-between">
+                    <span>Autonomous Refund Limit:</span>
+                    <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">Up to $50</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Human Escalation Trigger:</span>
+                    <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">2 Unresolved Queries</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Sentiment Guardrail:</span>
+                    <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Frustration Shield Active</span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          {/* 3. Recent Autonomously Resolved Inquiries Activity Feed */}
+          <Card className="p-5 border-slate-200/80 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Try Support Agent Live
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>Recent Resolved Customer Inquiries</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Test conversational order resolution and FAQ matching in the interactive two-column workspace.
+                  Live activity log of queries autonomously resolved by the Support Copilot.
                 </p>
               </div>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={ArrowRight}
-                onClick={() => setActiveTab("Conversation")}
-              >
-                Open Live Chat Sandbox
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 font-medium">Auto-updated 10s ago</span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto mt-3">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                    <th className="pb-2">Customer</th>
+                    <th className="pb-2">Inquiry Topic</th>
+                    <th className="pb-2">Channel</th>
+                    <th className="pb-2">Resolution Time</th>
+                    <th className="pb-2">CSAT</th>
+                    <th className="pb-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {[
+                    {
+                      customer: "Sarah Ahmed",
+                      email: "sarah@gmail.com",
+                      topic: "Order #12345 delivery tracking status",
+                      channel: "Shopify Store",
+                      time: "38s",
+                      stars: "5.0 ⭐",
+                      status: "Autonomous"
+                    },
+                    {
+                      customer: "Michael Vance",
+                      email: "m.vance@tech.co",
+                      topic: "Return shipping label generation",
+                      channel: "Live Web Chat",
+                      time: "1m 14s",
+                      stars: "5.0 ⭐",
+                      status: "Autonomous"
+                    },
+                    {
+                      customer: "Ali Raza",
+                      email: "ali.raza@outlook.com",
+                      topic: "Delivery address update to office",
+                      channel: "WhatsApp",
+                      time: "45s",
+                      stars: "4.8 ⭐",
+                      status: "Autonomous"
+                    },
+                    {
+                      customer: "Emily Watson",
+                      email: "emily.w@design.io",
+                      topic: "Headphone warranty coverage question",
+                      channel: "Email Ticket",
+                      time: "1m 02s",
+                      stars: "5.0 ⭐",
+                      status: "Autonomous"
+                    }
+                  ].map((row, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-2.5">
+                        <div className="font-bold text-slate-900">{row.customer}</div>
+                        <div className="text-[10px] text-slate-400">{row.email}</div>
+                      </td>
+                      <td className="py-2.5 font-medium text-slate-800">{row.topic}</td>
+                      <td className="py-2.5">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold">
+                          {row.channel}
+                        </span>
+                      </td>
+                      <td className="py-2.5 font-mono text-[11px] text-slate-600">{row.time}</td>
+                      <td className="py-2.5 font-bold text-amber-600">{row.stars}</td>
+                      <td className="py-2.5 text-right">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold">
+                          <CheckCircle2 className="w-3 h-3" />
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Card>
         </div>
