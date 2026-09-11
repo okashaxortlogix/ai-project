@@ -56,7 +56,7 @@ export default function Screen13MobileView({ onNavigate, isCompact = false }: Sc
       name: "SMS",
       icon: Phone,
       status: "Enabled",
-      description: "Direct 2-way SMS conversations through your GoHighLevel Twilio phone number.",
+      description: "Direct 2-way SMS conversations through your connected Twilio phone number.",
       settings: {
         primaryNumber: "+1 (555) 019-2831",
         greetingText: "Thanks for reaching out! Nexa AI is here to help."

@@ -587,7 +587,7 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
                   id: "gemini-1.5-pro",
                   name: "Google Gemini 1.5 Pro",
                   tag: "Recommended",
-                  desc: "Ultra-fast response latency, 1M context window, ideal for long document reasoning and automated GHL workflows.",
+                  desc: "Ultra-fast response latency, 1M context window, ideal for long document reasoning and automated store workflows.",
                   quota: "94% available (940k / 1M tokens/min)"
                 },
                 {
@@ -601,7 +601,7 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
                   id: "claude-3-5-sonnet",
                   name: "Anthropic Claude 3.5 Sonnet",
                   tag: "Advanced Reasoning",
-                  desc: "High precision code and structured JSON extraction for GHL API payload formatting.",
+                  desc: "High precision code and structured JSON extraction for CRM & Store API payload formatting.",
                   quota: "89% available (350k / 400k tokens/min)"
                 }
               ].map((m) => {
@@ -665,13 +665,13 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
               },
               {
                 key: "workflowAlerts" as const,
-                title: "GHL Workflow & Automation Alerts",
+                title: "Store & CRM Workflow Alerts",
                 desc: "Get notified when high-value opportunities change stage or appointment bookings fail."
               },
               {
                 key: "connectionAlerts" as const,
                 title: "Integration & Tunnel Health Alerts",
-                desc: "Immediate alerts if ngrok tunnel drops or GHL API token expires."
+                desc: "Immediate alerts if webhook endpoint drops or API token expires."
               },
               {
                 key: "actionCompletion" as const,

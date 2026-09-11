@@ -105,7 +105,7 @@ export default function Screen7Leads({ onNavigate, isCompact = false }: Screen7L
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "ghl_leads_export.csv");
+    link.setAttribute("download", "leads_export.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -275,7 +275,7 @@ export default function Screen7Leads({ onNavigate, isCompact = false }: Screen7L
         isOpen={isAddLeadModalOpen}
         onClose={() => setIsAddLeadModalOpen(false)}
         title="Add New Lead"
-        description="Create a lead profile in GoHighLevel CRM."
+        description="Create a new lead profile in the CRM."
         size="md"
         footer={
           <div className="flex items-center justify-end gap-2">

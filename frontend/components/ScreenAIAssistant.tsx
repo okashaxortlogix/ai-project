@@ -427,7 +427,7 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
         actions={activePlanModal.actions || []}
         onExecute={() => {
           setActivePlanModal((prev) => ({ ...prev, isOpen: false }));
-          alert("Workflow dispatched and deployed to your GoHighLevel sub-account!");
+          alert("Workflow dispatched and deployed to your connected store & CRM!");
         }}
       />
     </div>

@@ -27,9 +27,9 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
   const [copiedKey, setCopiedKey] = useState(false);
 
   // Form states
-  const [locationId, setLocationId] = useState("loc_ghl_98314xa92");
+  const [storeId, setStoreId] = useState("store_live_98314xa92");
   const [apiKey, setApiKey] = useState("nexa_live_894104928104810948194");
-  const [webhookUrl, setWebhookUrl] = useState("https://api.domain.com/v1/webhooks/ghl");
+  const [webhookUrl, setWebhookUrl] = useState("https://api.domain.com/v1/webhooks/store");
   const [brandColor, setBrandColor] = useState("#2563EB");
   const [assistantName, setAssistantName] = useState("Nexa Copilot");
 
@@ -41,13 +41,13 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
 
   const setupCards = [
     {
-      id: "ghl-account",
-      title: "GHL Account",
-      desc: "Connect and manage your GoHighLevel account",
+      id: "store-account",
+      title: "Store & CRM Account",
+      desc: "Connect and manage your E-Commerce Store & CRM integration",
       badge: "Connected",
       variant: "connected" as const,
       icon: Sliders,
-      action: () => setActiveModal("ghl")
+      action: () => setActiveModal("store")
     },
     {
       id: "integrations",
@@ -92,7 +92,7 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
               Account Setup
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Configure your GHL account settings, integrations, and preferences.
+              Configure your store and CRM account settings, integrations, and preferences.
             </p>
           </div>
           <StatusBadge status="Connected" variant="connected" pulse />
@@ -132,12 +132,12 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
         })}
       </div>
 
-      {/* GHL Account Modal */}
+      {/* Store & CRM Account Modal */}
       <Modal
-        isOpen={activeModal === "ghl"}
+        isOpen={activeModal === "store"}
         onClose={() => setActiveModal(null)}
-        title="GoHighLevel Sub-Account"
-        subtitle="Manage OAuth permissions and location mappings"
+        title="Store & CRM Integration"
+        subtitle="Manage API permissions and store mappings"
         maxWidth="md"
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
@@ -148,7 +148,7 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
               variant="primary"
               size="sm"
               onClick={() => {
-                alert("GoHighLevel settings saved successfully!");
+                alert("Store & CRM settings saved successfully!");
                 setActiveModal(null);
               }}
             >
@@ -160,17 +160,17 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
         <div className="space-y-3">
           <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center gap-2.5 text-xs text-emerald-800">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Connected to location <strong>loc_ghl_98314xa92</strong></span>
+            <span>Connected to store identifier <strong>store_live_98314xa92</strong></span>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Location ID
+              Store / Location ID
             </label>
             <input
               type="text"
-              value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
+              value={storeId}
+              onChange={(e) => setStoreId(e.target.value)}
               className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
             />
           </div>

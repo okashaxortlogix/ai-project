@@ -58,7 +58,7 @@ export default function Screen10Integrations({ onNavigate, isCompact = false }: 
     { id: "shopify", name: "Shopify Store", provider: "shopify", description: "Real-time order sync, catalog recommendations, and automated inventory balance.", icon: "shopify", connected: false },
     { id: "woocommerce", name: "WooCommerce", provider: "woocommerce", description: "Cross-platform sync with active HMAC signature verification on webhook 2146.", icon: "woocommerce", connected: false },
     { id: "google_calendar", name: "Google Calendar", provider: "google_calendar", description: "Two-way meeting sync, buffer calculation, and appointment reservation.", icon: "google-calendar", connected: false },
-    { id: "hubspot", name: "HubSpot CRM", provider: "hubspot", description: "Sub-account sync for contacts, deals, pipelines, and conversation webhooks.", icon: "ghl", connected: false },
+    { id: "hubspot", name: "HubSpot CRM", provider: "hubspot", description: "Sub-account sync for contacts, deals, pipelines, and conversation webhooks.", icon: "hubspot", connected: false },
     { id: "email", name: "Email SMTP / SES", provider: "email", description: "Transactional confirmations, escalation alerts, and digest delivery.", icon: "mail", connected: false },
     { id: "whatsapp", name: "WhatsApp Business", provider: "whatsapp", description: "Autonomous chat copilot responses over official Meta Cloud API.", icon: "whatsapp", connected: false }
   ];
@@ -158,7 +158,8 @@ export default function Screen10Integrations({ onNavigate, isCompact = false }: 
   const renderIcon = (type: string) => {
     switch (type) {
       case "bot":
-      case "ghl":
+      case "hubspot":
+      case "crm":
         return <Bot className="w-5 h-5 text-blue-600" />;
       case "shopping-bag":
       case "shopify":

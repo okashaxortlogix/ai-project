@@ -45,13 +45,13 @@ export default function Header({
   onOpenEmbed,
   onOpenSimulator
 }: HeaderProps) {
-  const [isGhlModalOpen, setIsGhlModalOpen] = useState(false);
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [ghlLocationId, setGhlLocationId] = useState("loc_ghl_98314xa92");
-  const [ghlToken, setGhlToken] = useState("pit-84192401-a472-89be-01");
-  const [ghlConnected, setGhlConnected] = useState(true);
+  const [storeId, setStoreId] = useState("store_live_98314xa92");
+  const [storeToken, setStoreToken] = useState("tok-84192401-a472-89be-01");
+  const [storeConnected, setStoreConnected] = useState(true);
 
   const notifications = [
     { id: 1, title: "New appointment booked", time: "2m ago", desc: "Dental Consultation with Sarah Ahmed" },
@@ -60,10 +60,10 @@ export default function Header({
     { id: 4, title: "New lead captured", time: "45m ago", desc: "Ali Raza qualified with score 88%" }
   ];
 
-  const handleSaveGhl = (e: React.FormEvent) => {
+  const handleSaveStore = (e: React.FormEvent) => {
     e.preventDefault();
-    setGhlConnected(true);
-    setIsGhlModalOpen(false);
+    setStoreConnected(true);
+    setIsStoreModalOpen(false);
   };
 
   return (
@@ -92,7 +92,7 @@ export default function Header({
             </div>
           </div>
 
-          {/* Right: Controls, GHL Status, Notifications, User */}
+          {/* Right: Controls, Store Status, Notifications, User */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             {/* Deploy Widget Button */}
             {onOpenEmbed && (
@@ -127,14 +127,14 @@ export default function Header({
               <span>AI Assistant</span>
             </button>
 
-            {/* GHL Connection Status Pill */}
+            {/* Store Connection Status Pill */}
             <button
-              onClick={() => setIsGhlModalOpen(true)}
+              onClick={() => setIsStoreModalOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold transition-colors cursor-pointer"
-              title="Click to manage GoHighLevel connection"
+              title="Click to manage Store & CRM connection"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 badge-pulse" />
-              <span>GHL Connected</span>
+              <span>Store Sync Active</span>
             </button>
 
             {/* Notifications Bell */}
@@ -204,11 +204,11 @@ export default function Header({
                       <span>Account Settings</span>
                     </button>
                     <button
-                      onClick={() => { setActiveScreen(15); setIsUserMenuOpen(false); }}
+                      onClick={() => { setActiveScreen(9); setIsUserMenuOpen(false); }}
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md cursor-pointer"
                     >
                       <Sliders className="w-3.5 h-3.5 text-slate-400" />
-                      <span>GHL Integration</span>
+                      <span>Integrations</span>
                     </button>
                     <button
                       onClick={() => { resetDemo(); setIsUserMenuOpen(false); }}
@@ -234,81 +234,80 @@ export default function Header({
         </div>
       </header>
 
-      {/* GoHighLevel Connection Modal */}
+      {/* Store Connection Modal */}
       <Modal
-        isOpen={isGhlModalOpen}
-        onClose={() => setIsGhlModalOpen(false)}
-        title="Connect GoHighLevel"
-        subtitle="Configure your GoHighLevel sub-account or OAuth connection"
+        isOpen={isStoreModalOpen}
+        onClose={() => setIsStoreModalOpen(false)}
+        title="Store & CRM Connection"
+        subtitle="Configure your E-Commerce Store or CRM API connection"
         maxWidth="md"
         footer={
           <div className="flex items-center justify-between w-full">
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => { setGhlConnected(false); setIsGhlModalOpen(false); }}
+              onClick={() => { setStoreConnected(false); setIsStoreModalOpen(false); }}
             >
               Disconnect
             </Button>
             <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setIsGhlModalOpen(false)}>
+              <Button variant="secondary" size="sm" onClick={() => setIsStoreModalOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" size="sm" onClick={handleSaveGhl}>
+              <Button variant="primary" size="sm" onClick={handleSaveStore}>
                 Save & Connect
               </Button>
             </div>
           </div>
         }
       >
-        <form onSubmit={handleSaveGhl} className="space-y-4">
+        <form onSubmit={handleSaveStore} className="space-y-4">
           <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-start gap-3">
             <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="text-xs text-blue-900">
-              <p className="font-semibold">Sub-Account Connected</p>
+              <p className="font-semibold">Store Sync Active</p>
               <p className="text-blue-700 text-[11px] mt-0.5">
-                Location sync is currently active. Conversations, calendars, and contacts are flowing seamlessly.
+                Real-time sync is currently active. Conversations, product catalogs, and contacts are flowing seamlessly.
               </p>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              GHL Location ID
+              Store ID / Domain
             </label>
             <input
               type="text"
-              value={ghlLocationId}
-              onChange={(e) => setGhlLocationId(e.target.value)}
+              value={storeId}
+              onChange={(e) => setStoreId(e.target.value)}
               className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
-              placeholder="e.g. loc_ghl_98314xa92"
+              placeholder="e.g. mystore.myshopify.com"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Private Integration Token / API Key
+              Private API Token / Secret
             </label>
             <input
               type="password"
-              value={ghlToken}
-              onChange={(e) => setGhlToken(e.target.value)}
+              value={storeToken}
+              onChange={(e) => setStoreToken(e.target.value)}
               className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
-              placeholder="pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              placeholder="tok-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
             />
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>OAuth 2.0 Alternative:</span>
-            <a
-              href="https://marketplace.gohighlevel.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:underline"
+            <span>Manage All Channels:</span>
+            <button
+              type="button"
+              onClick={() => { setIsStoreModalOpen(false); setActiveScreen(9); }}
+              className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:underline cursor-pointer"
             >
-              <span>Connect with Marketplace</span>
+              <span>Go to Integrations Hub</span>
               <ExternalLink className="w-3 h-3" />
-            </a>
+            </button>
           </div>
         </form>
       </Modal>

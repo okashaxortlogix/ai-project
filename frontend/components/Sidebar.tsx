@@ -79,7 +79,7 @@ export default function Sidebar({
                   Nexa AI
                 </div>
                 <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
-                  GHL Assistant
+                  Sales & Support AI
                 </div>
               </div>
             </div>

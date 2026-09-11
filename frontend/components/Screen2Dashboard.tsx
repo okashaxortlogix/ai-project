@@ -185,7 +185,7 @@ export default function Screen2Dashboard({
     },
     {
       name: "API Connection",
-      status: "GHL & Webhooks Active",
+      status: "Store & Webhooks Active",
       badge: "Connected",
       variant: "connected" as const,
       icon: Plug
@@ -366,7 +366,7 @@ export default function Screen2Dashboard({
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             </div>
             <h4 className="text-xs font-bold text-white mt-1">Connect Store &amp; Sync</h4>
-            <p className="text-[11px] text-blue-200/70 mt-0.5">Shopify, Woo &amp; GHL connected</p>
+            <p className="text-[11px] text-blue-200/70 mt-0.5">Shopify &amp; WooCommerce connected</p>
           </div>
 
           <div
@@ -522,9 +522,9 @@ export default function Screen2Dashboard({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[11px] text-slate-500">GoHighLevel Sync</span>
+            <span className="text-[11px] text-slate-500">Store &amp; CRM Sync</span>
             <button
-              onClick={() => onNavigate?.(15)}
+              onClick={() => onNavigate?.(9)}
               className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
             >
               Configure

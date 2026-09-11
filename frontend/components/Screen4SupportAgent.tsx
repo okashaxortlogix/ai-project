@@ -1042,7 +1042,7 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
         isOpen={isOrderModalOpen}
         onClose={() => setIsOrderModalOpen(false)}
         title="Order Details #12345"
-        description="Synchronized from Shopify & GoHighLevel CRM"
+        description="Synchronized from Shopify & Customer CRM"
         size="md"
         footer={
           <Button variant="secondary" size="sm" onClick={() => setIsOrderModalOpen(false)}>

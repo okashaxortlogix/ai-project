@@ -54,21 +54,21 @@ export default function ScreenDocumentation({ onNavigate }: ScreenDocumentationP
 
   const articles: DocArticle[] = [
     {
-      id: "ghl-setup",
+      id: "store-crm-setup",
       category: "Getting Started",
-      title: "Getting Started with GHL",
-      description: "Complete setup guide to get started with GoHighLevel and Nexa AI copilot.",
+      title: "Getting Started with Store & CRM Sync",
+      description: "Complete setup guide to get started with Store Integrations and Nexa AI copilot.",
       readTime: "4 min read",
       lastUpdated: "Apr 28, 2026",
       sections: [
         {
           heading: "1. Overview & Architecture",
-          body: "Nexa AI synchronizes directly with your GoHighLevel sub-account using official OAuth v2 tokens and custom webhook delivery endpoints. Incoming SMS, Web Chat, and WhatsApp messages are processed with sub-second RAG response times."
+          body: "Nexa AI synchronizes directly with your e-commerce store and CRM using official API keys and custom webhook delivery endpoints. Incoming SMS, Web Chat, and WhatsApp messages are processed with sub-second RAG response times."
         },
         {
-          heading: "2. Connecting your Sub-Account",
-          body: "Navigate to Account Setup or click the GHL status indicator in the top header. Supply your Location ID and Private Integration Token to link your calendar, contact pipeline, and custom fields.",
-          codeSnippet: `// Verify connection via API\nconst res = await fetch("/api/v1/ghl/verify", {\n  headers: { "X-GHL-Location": "loc_demo_9824" }\n});\nconsole.log(res.status); // 200 OK`
+          heading: "2. Connecting your Store & CRM",
+          body: "Navigate to Account Setup or click the Store Sync indicator in the top header. Supply your Store ID and Private API Token to link your product catalog, orders, and customer pipeline.",
+          codeSnippet: `// Verify connection via API\nconst res = await fetch("/api/v1/integrations/verify", {\n  headers: { "X-Store-Id": "store_demo_9824" }\n});\nconsole.log(res.status); // 200 OK`
         },
         {
           heading: "3. Automated Lead Qualification",
@@ -86,7 +86,7 @@ export default function ScreenDocumentation({ onNavigate }: ScreenDocumentationP
       sections: [
         {
           heading: "1. Selecting a High-Converting Blueprint",
-          body: "Visit the Templates Library and filter by Funnels. Click 'Use Template' on blueprints like 'High Ticket Coaching' or 'Lead Magnet Funnel' to deploy landing pages and opt-in steps directly into your GHL account."
+          body: "Visit the Templates Library and filter by Funnels. Click 'Use Template' on blueprints like 'High Ticket Coaching' or 'Lead Magnet Funnel' to deploy landing pages and opt-in steps directly into your marketing pipeline."
         },
         {
           heading: "2. Customizing AI Prompt Triggers",
@@ -122,7 +122,7 @@ export default function ScreenDocumentation({ onNavigate }: ScreenDocumentationP
       sections: [
         {
           heading: "1. Bi-directional Contact Sync",
-          body: "All leads captured during conversational live chats are instantly created or enriched in your GHL Leads CRM with phone, email, intent score, and tags."
+          body: "All leads captured during conversational live chats are instantly created or enriched in your Customer CRM with phone, email, intent score, and tags."
         }
       ]
     },
@@ -130,14 +130,14 @@ export default function ScreenDocumentation({ onNavigate }: ScreenDocumentationP
       id: "api-guide",
       category: "Getting Started",
       title: "API Integration Guide",
-      description: "Use the GHL API & Webhook endpoints with your autonomous assistant.",
+      description: "Use the REST API & Webhook endpoints with your autonomous assistant.",
       readTime: "8 min read",
       lastUpdated: "Apr 20, 2026",
       sections: [
         {
           heading: "1. Webhook Signature Verification",
           body: "Verify all incoming webhook payloads using the HMAC-SHA256 signature passed in the request header.",
-          codeSnippet: `const crypto = require("crypto");\nfunction verifyGhlWebhook(body, signature, secret) {\n  const hmac = crypto.createHmac("sha256", secret).update(body).digest("hex");\n  return hmac === signature;\n}`
+          codeSnippet: `const crypto = require("crypto");\nfunction verifyStoreWebhook(body, signature, secret) {\n  const hmac = crypto.createHmac("sha256", secret).update(body).digest("hex");\n  return hmac === signature;\n}`
         }
       ]
     },
@@ -214,7 +214,7 @@ export default function ScreenDocumentation({ onNavigate }: ScreenDocumentationP
               Documentation
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Find guides, tutorials and helpful resources to configure your GHL assistant.
+              Find guides, tutorials and helpful resources to configure your AI assistant.
             </p>
           </div>
           {activeArticle && (

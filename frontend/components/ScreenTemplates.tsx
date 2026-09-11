@@ -246,7 +246,7 @@ export default function ScreenTemplates({ onNavigate }: ScreenTemplatesProps) {
           isOpen={!!selectedTemplate}
           onClose={() => setSelectedTemplate(null)}
           title={`Template: ${selectedTemplate.name}`}
-          subtitle="Ready to deploy to your GHL sub-account"
+          subtitle="Ready to deploy to your connected store & CRM"
           maxWidth="md"
           footer={
             <div className="flex items-center justify-end gap-2 w-full">
@@ -276,7 +276,7 @@ export default function ScreenTemplates({ onNavigate }: ScreenTemplatesProps) {
                 Installation Target
               </span>
               <span className="text-blue-700">
-                This will create pages, contact tags, and AI agent prompt rules inside your active GoHighLevel sub-account.
+                This will create pages, contact tags, and AI agent prompt rules inside your active store & CRM system.
               </span>
             </div>
             <p>

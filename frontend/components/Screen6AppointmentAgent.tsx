@@ -346,7 +346,7 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
                   "Book appointments",
                   "Send confirmations",
                   "Reschedule / cancel",
-                  "Real-time Google & GHL Calendar synchronization"
+                  "Real-time Google & Outlook Calendar synchronization"
                 ].map((cap, i) => (
                   <li key={i} className="flex items-center gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -597,7 +597,7 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
               className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
             >
               <option value="Google Calendar (Primary)">Google Calendar (Primary)</option>
-              <option value="GoHighLevel Native Calendar">GoHighLevel Native Calendar</option>
+              <option value="Apple Calendar (iCal)">Apple Calendar (iCal)</option>
               <option value="Outlook 365">Outlook 365</option>
             </select>
           </div>
@@ -783,7 +783,7 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
               className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
             >
               <option value="Google Calendar (Primary)">Google Calendar (Primary)</option>
-              <option value="GoHighLevel Native Calendar">GoHighLevel Native Calendar</option>
+              <option value="Apple Calendar (iCal)">Apple Calendar (iCal)</option>
               <option value="Outlook 365">Outlook 365</option>
             </select>
           </div>

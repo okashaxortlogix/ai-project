@@ -97,13 +97,13 @@ export default function HomePage() {
       case 14:
         return { category: "Templates", title: "Templates Library", subtitle: "Pre-built funnels, websites, workflows, and campaigns" };
       case 15:
-        return { category: "Configuration", title: "Account Setup", subtitle: "Configure your GHL account settings, integrations, and preferences" };
+        return { category: "Configuration", title: "Account Setup", subtitle: "Configure your store account settings, integrations, and preferences" };
       case 16:
         return { category: "Guides", title: "Documentation", subtitle: "Find guides, tutorials, and helpful resources" };
       case 17:
         return { category: "Ecosystem", title: "Integrations Hub", subtitle: "Connect Google Calendar, Shopify, WooCommerce, and messaging APIs" };
       default:
-        return { category: "Platform", title: "Nexa AI / GHL Assistant", subtitle: "Enterprise AI Conversation & Sales Suite" };
+        return { category: "Platform", title: "Nexa AI / Sales Assistant", subtitle: "Enterprise AI Conversation & Sales Suite" };
     }
   };
 
