@@ -1091,6 +1091,20 @@
   ],
   "appointments": [
     {
+      "organization_id": "org-default",
+      "customer_id": "cust-demo",
+      "title": "Demo Call",
+      "date": "Apr 29, 2025",
+      "time": "2:00 PM - 30m",
+      "customer_name": "Sara Jenkins",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      "service": "Enterprise Demo",
+      "provider": "Google Calendar",
+      "status": "Confirmed",
+      "id": "apt-1789143469823",
+      "created_at": "2026-09-11T16:17:49.823Z"
+    },
+    {
       "organization_id": "org-acme-1",
       "customer_id": "cust-3",
       "title": "Demo Call",

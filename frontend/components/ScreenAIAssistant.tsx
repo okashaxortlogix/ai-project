@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AIActionPlanModal } from "@/components/ui/AIActionPlanModal";
+import { api } from "@/lib/api";
 
 interface ScreenAIAssistantProps {
   onNavigate?: (screen: number) => void;
@@ -71,9 +72,9 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
     { label: "Book an appointment", icon: CalendarIcon, query: "Book an appointment" }
   ];
 
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
-    if (!text) return;
+    if (!text || isTyping) return;
 
     const userMsg: ChatMessage = {
       id: `usr-${Date.now()}`,
@@ -86,60 +87,66 @@ export default function ScreenAIAssistant({ onNavigate }: ScreenAIAssistantProps
     if (!textToSend) setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      let reply: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        sender: "ai",
-        content: "I've processed your request. How else can I assist your business today?",
-        time: "Just now"
-      };
+    try {
+      const res = await api.chatAI({
+        message: text,
+        agentType: "assistant",
+        customerName: "Admin User",
+        history: messages.slice(-5).map((m) => ({
+          role: m.sender === "user" ? "user" : "assistant",
+          content: m.content
+        }))
+      });
 
+      let actionPlan = undefined;
       const lower = text.toLowerCase();
-
       if (lower.includes("funnel") || lower.includes("template")) {
-        reply = {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          content: "I can construct and deploy a high-converting lead nurturing funnel directly into your GoHighLevel account. Here is the proposed execution plan:",
-          time: "Just now",
-          actionPlan: {
-            title: "Deploy Lead Nurturing Funnel",
-            trigger: "New Opt-in Form Submission",
-            actions: [
-              "Create high-ticket landing page with VSL video block",
-              "Connect conversational qualification chat widget",
-              "Set up automated SMS confirmation within 60 seconds",
-              "Notify sales manager if budget exceeds $1,000"
-            ],
-            status: "pending"
-          }
+        actionPlan = {
+          title: "Deploy Lead Nurturing Funnel",
+          trigger: "New Opt-in Form Submission",
+          actions: [
+            "Create high-ticket landing page with VSL video block",
+            "Connect conversational qualification chat widget",
+            "Set up automated SMS confirmation within 60 seconds",
+            "Notify sales manager if budget exceeds $1,000"
+          ],
+          status: "pending" as const
         };
-      } else if (lower.includes("conversation") || lower.includes("chat")) {
-        reply = {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          content: "You have 6 active live conversations today:\n• Sarah Ahmed (Appointment inquiry)\n• Ali Raza (Laptop pricing)\n• Fatima Khan (Order #12345 tracking)\n\nWould you like me to take you to the Live Conversations Inbox?",
-          time: "Just now"
-        };
-      } else if (lower.includes("order")) {
-        reply = {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          content: "8 orders have been processed through Shopify & WooCommerce sync today. Order #12345 (Sarah Ahmed) is currently out for delivery via FedEx Express.",
-          time: "Just now"
-        };
-      } else if (lower.includes("appointment") || lower.includes("book")) {
-        reply = {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          content: "I have 3 confirmed bookings for tomorrow:\n• 10:00 AM — Sarah Ahmed (Dental Cleaning)\n• 11:30 AM — Ali Raza (Consultation)\n• 02:00 PM — Fatima Khan (Follow-up)\n\nWould you like to reserve a new slot?",
-          time: "Just now"
+      } else if (res.toolExecuted && res.toolExecuted.toolName === "create_appointment") {
+        actionPlan = {
+          title: "Calendar Sync & Confirmation",
+          trigger: "AI Appointment Tool",
+          actions: [
+            "Book slot in Google Calendar / Outlook",
+            "Send email confirmation to customer",
+            "Create reminder notification"
+          ],
+          status: "executed" as const
         };
       }
 
-      setMessages((prev) => [...prev, reply]);
+      const aiMsg: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        sender: "ai",
+        content: res.reply || "I've processed your request. How else can I assist your business today?",
+        time: "Just now",
+        actionPlan
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          sender: "ai",
+          content: "I ran into an issue connecting to the AI engine. Please verify the server is running.",
+          time: "Just now"
+        }
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 900);
+    }
   };
 
   const handleExecutePlan = (msgId: string) => {

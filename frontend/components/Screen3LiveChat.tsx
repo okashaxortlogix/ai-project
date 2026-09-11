@@ -152,11 +152,45 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
   const selectedConv =
     conversationList.find((c) => c.id === selectedId) || conversationList[0];
 
-  const handleSendReply = () => {
+  useEffect(() => {
+    async function loadConversations() {
+      try {
+        const res = await api.getConversations();
+        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+          const mapped = res.data.map((item: any) => ({
+            id: item.id,
+            customer: item.customer?.name || "Customer",
+            email: item.customer?.email || "customer@example.com",
+            message: item.last_message || "Active conversation",
+            agent: item.assigned_agent || "support",
+            agentLabel: (item.assigned_agent || "Support").charAt(0).toUpperCase() + (item.assigned_agent || "support").slice(1),
+            time: item.last_message_at ? new Date(item.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Just now",
+            status: item.status || "active",
+            transcript: item.messages?.map((m: any) => ({
+              sender: m.sender === "customer" ? "customer" : "agent",
+              text: m.content,
+              time: m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Just now"
+            })) || [
+              { sender: "customer", text: item.last_message || "Hello!", time: "Just now" }
+            ],
+            orderContext: item.orderContext || null
+          }));
+          setConversationList(mapped);
+          if (mapped[0]) setSelectedId(mapped[0].id);
+        }
+      } catch (e) {
+        console.warn("Could not load backend conversations, using initial list", e);
+      }
+    }
+    loadConversations();
+  }, []);
+
+  const handleSendReply = async () => {
     if (!replyText.trim()) return;
+    const currentReply = replyText.trim();
     const newMsg = {
       sender: "agent",
-      text: replyText.trim(),
+      text: currentReply,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
 
@@ -168,17 +202,25 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
       )
     );
     setReplyText("");
+
+    try {
+      await api.sendMessage(selectedConv.id, currentReply, "agent");
+    } catch (err) {
+      console.warn("Failed to persist agent message to DB", err);
+    }
   };
 
-  const handleCreateNewChat = (e: React.FormEvent) => {
+  const handleCreateNewChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newChatName.trim()) return;
 
+    const initialMsg = newChatMessage.trim() || "Hello, I need assistance.";
+    const tempId = `conv-${Date.now()}`;
     const newConv = {
-      id: `conv-${Date.now()}`,
+      id: tempId,
       customer: newChatName.trim(),
       email: newChatEmail.trim() || `${newChatName.toLowerCase().replace(/\s+/g, ".")}@example.com`,
-      message: newChatMessage.trim() || "Started new session",
+      message: initialMsg,
       agent: newChatAgent,
       agentLabel: newChatAgent.charAt(0).toUpperCase() + newChatAgent.slice(1),
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -186,24 +228,42 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
       transcript: [
         {
           sender: "customer",
-          text: newChatMessage.trim() || "Hello, I need assistance.",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        },
-        {
-          sender: "agent",
-          text: `Hello ${newChatName}! I am your ${newChatAgent} AI assistant. How can I help you today?`,
+          text: initialMsg,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         }
       ],
       orderContext: null
     };
 
-    setConversationList([newConv, ...conversationList]);
-    setSelectedId(newConv.id);
+    setConversationList((prev) => [newConv, ...prev]);
+    setSelectedId(tempId);
     setIsNewChatModalOpen(false);
     setNewChatName("");
     setNewChatEmail("");
     setNewChatMessage("");
+
+    // Automatically trigger intelligent AI response for the initial message
+    try {
+      const aiRes = await api.chatAI({
+        message: initialMsg,
+        agentType: newChatAgent as any,
+        customerName: newChatName.trim(),
+        conversationId: tempId
+      });
+
+      if (aiRes?.reply) {
+        const aiMsg = {
+          sender: "agent",
+          text: aiRes.reply,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+        setConversationList((prev) =>
+          prev.map((c) => (c.id === tempId ? { ...c, transcript: [...c.transcript, aiMsg] } : c))
+        );
+      }
+    } catch (err) {
+      console.warn("AI generation failed for new chat", err);
+    }
   };
 
   const getTagColor = (agent: string) => {

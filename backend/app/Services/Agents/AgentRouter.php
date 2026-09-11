@@ -35,10 +35,24 @@ class AgentRouter
         if (!$agent) {
             $agent = Agent::where('organization_id', $conversation->organization_id)
                 ->where('enabled', true)
-                ->firstOrFail();
+                ->first();
         }
 
-        $conversation->update(['active_agent_id' => $agent->id]);
+        if (!$agent) {
+            $agent = new Agent([
+                'id' => "agent-{$agentType}",
+                'organization_id' => $conversation->organization_id,
+                'name' => ucfirst($agentType) . ' Agent',
+                'type' => $agentType,
+                'role' => "Autonomous {$agentType} agent",
+                'enabled' => true,
+                'temperature' => 0.4
+            ]);
+        }
+
+        if ($agent->exists) {
+            $conversation->update(['active_agent_id' => $agent->id]);
+        }
 
         return $agent;
     }

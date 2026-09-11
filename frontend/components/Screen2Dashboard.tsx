@@ -44,17 +44,81 @@ export default function Screen2Dashboard({ onNavigate }: Screen2DashboardProps) 
     agents_status: "All systems running"
   });
 
+  const [activities, setActivities] = useState<any[]>([
+    {
+      id: 1,
+      title: "New appointment booked",
+      subtitle: "Dental Consultation with Sarah Ahmed",
+      time: "2 min ago",
+      type: "appointment"
+    },
+    {
+      id: 2,
+      title: "Support ticket resolved",
+      subtitle: "Order #2456 marked resolved by Support Bot",
+      time: "12 min ago",
+      type: "support"
+    },
+    {
+      id: 3,
+      title: "New order received",
+      subtitle: "Order #12345 synced to Shopify & WooCommerce",
+      time: "25 min ago",
+      type: "order"
+    },
+    {
+      id: 4,
+      title: "Conversation started",
+      subtitle: "Lead captured from website webchat",
+      time: "45 min ago",
+      type: "lead"
+    }
+  ]);
+
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await api.getAnalytics();
-        if (res.success && res.data?.metrics) {
-          // If live data exists, dynamically adapt
+        const [analyticsRes, aptsRes, convsRes] = await Promise.allSettled([
+          api.getAnalytics(),
+          api.getAppointments(),
+          api.getConversations()
+        ]);
+
+        if (analyticsRes.status === "fulfilled" && analyticsRes.value?.success && analyticsRes.value.data?.metrics) {
+          const m = analyticsRes.value.data.metrics;
           setMetrics((prev) => ({
             ...prev,
-            conversations: res.data.metrics.conversations || prev.conversations,
-            appointments: res.data.metrics.appointments || prev.appointments
+            conversations: m.conversations || prev.conversations,
+            appointments: m.appointments || prev.appointments
           }));
+        }
+
+        const dynamicActivities: any[] = [];
+        if (aptsRes.status === "fulfilled" && aptsRes.value?.success && Array.isArray(aptsRes.value.data)) {
+          aptsRes.value.data.slice(0, 2).forEach((a: any, i: number) => {
+            dynamicActivities.push({
+              id: `apt-${i}`,
+              title: `${a.title || "Appointment"} confirmed`,
+              subtitle: `With ${a.customer_name || "Customer"} (${a.time || "Tomorrow"})`,
+              time: "Recently",
+              type: "appointment"
+            });
+          });
+        }
+        if (convsRes.status === "fulfilled" && convsRes.value?.success && Array.isArray(convsRes.value.data)) {
+          convsRes.value.data.slice(0, 2).forEach((c: any, i: number) => {
+            dynamicActivities.push({
+              id: `conv-${i}`,
+              title: `Live ${c.assigned_agent || "support"} conversation`,
+              subtitle: `${c.customer?.name || "Customer"}: "${(c.last_message || "").slice(0, 40)}..."`,
+              time: "Active",
+              type: "lead"
+            });
+          });
+        }
+
+        if (dynamicActivities.length > 0) {
+          setActivities(dynamicActivities);
         }
       } catch (e) {
         // Fallback gracefully
@@ -98,36 +162,7 @@ export default function Screen2Dashboard({ onNavigate }: Screen2DashboardProps) 
     }
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      title: "New appointment booked",
-      subtitle: "Dental Consultation with Sarah Ahmed",
-      time: "2 min ago",
-      type: "appointment"
-    },
-    {
-      id: 2,
-      title: "Support ticket resolved",
-      subtitle: "Order #2456 marked resolved by Support Bot",
-      time: "12 min ago",
-      type: "support"
-    },
-    {
-      id: 3,
-      title: "New order received",
-      subtitle: "Order #12345 synced to Shopify & WooCommerce",
-      time: "25 min ago",
-      type: "order"
-    },
-    {
-      id: 4,
-      title: "Conversation started",
-      subtitle: "Lead captured from website webchat",
-      time: "45 min ago",
-      type: "lead"
-    }
-  ];
+
 
   const systemStatus = [
     {
@@ -302,7 +337,7 @@ export default function Screen2Dashboard({ onNavigate }: Screen2DashboardProps) 
           </div>
 
           <div className="divide-y divide-slate-100">
-            {recentActivities.map((act) => (
+            {activities.map((act) => (
               <div
                 key={act.id}
                 className="py-3 flex items-start justify-between gap-3 hover:bg-slate-50/70 rounded-lg px-2 transition-colors cursor-pointer"

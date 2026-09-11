@@ -20,6 +20,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
+import { useEffect } from "react";
+import { api } from "@/lib/api";
 
 interface Screen6AppointmentAgentProps {
   onNavigate?: (screen: number) => void;
@@ -42,7 +44,7 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentItem | null>(null);
   const [configSaved, setConfigSaved] = useState(false);
 
-  // Appointments List matching Screen 9
+  // Appointments List loaded from real database
   const [appointments, setAppointments] = useState<AppointmentItem[]>([
     {
       id: "apt-1",
@@ -69,6 +71,30 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
       status: "Confirmed"
     }
   ]);
+
+  const loadAppointments = async () => {
+    try {
+      const res = await api.getAppointments();
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setAppointments(
+          res.data.map((a: any) => ({
+            id: a.id || `apt-${Date.now()}`,
+            time: a.time || "10:00 AM",
+            customer: a.customer_name || a.customer || "Client",
+            email: a.email || "client@company.com",
+            appointmentType: a.service || a.title || "Consultation",
+            status: (a.status as any) || "Confirmed"
+          }))
+        );
+      }
+    } catch (err) {
+      console.warn("Could not load appointments from API:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadAppointments();
+  }, []);
 
   // Form state for creating appointment
   const [newCustomer, setNewCustomer] = useState("");
@@ -111,9 +137,9 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || isTyping) return;
 
     const userText = chatInput.trim();
     setMessages((prev) => [
@@ -123,27 +149,47 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
     setChatInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      let reply = "I can help check our real-time calendar availability or reschedule any confirmed slot.";
-      const lower = userText.toLowerCase();
+    try {
+      const res = await api.chatAI({
+        message: userText,
+        agentType: "appointment",
+        customerName: "Sarah Ahmed",
+        conversationId: "conv-apt-sandbox",
+        history: messages.slice(-5).map((m) => ({
+          role: m.sender === "customer" ? "user" : "assistant",
+          content: m.content
+        }))
+      });
 
-      if (lower.includes("reschedule") || lower.includes("change")) {
-        reply = "Certainly! Would you like to move your appointment to 11:30 AM or 02:00 PM instead?";
-      } else if (lower.includes("cancel")) {
-        reply = "Your appointment has been cancelled. A confirmation email has been dispatched. Feel free to rebook whenever you are ready!";
-      } else if (lower.includes("slot") || lower.includes("tomorrow") || lower.includes("time")) {
-        reply = "Tomorrow we have 10:00 AM, 11:30 AM, and 02:00 PM open. Let me know your preference and I will reserve it instantly!";
+      if (res.toolExecuted && res.toolExecuted.toolName === "create_appointment") {
+        await loadAppointments();
       }
 
       setMessages((prev) => [
         ...prev,
-        { id: `ai-${Date.now()}`, sender: "agent", content: reply, time: "Just now" }
+        {
+          id: `ai-${Date.now()}`,
+          sender: "agent",
+          content: res.reply || "I can help check our real-time calendar availability or reschedule any confirmed slot.",
+          time: "Just now"
+        }
       ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          sender: "agent",
+          content: "I'm having trouble syncing with the calendar service. Please retry in a moment.",
+          time: "Just now"
+        }
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 850);
+    }
   };
 
-  const handleCreateBooking = (e: React.FormEvent) => {
+  const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomer.trim() || !newEmail.trim()) return;
 
@@ -157,6 +203,21 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
     };
 
     setAppointments((prev) => [...prev, newApt]);
+    try {
+      await api.createAppointment({
+        title: newType,
+        customer_name: newCustomer,
+        email: newEmail,
+        date: "Tomorrow",
+        time: newTime,
+        service: newType,
+        provider: syncedCalendar.split(" ")[0] || "Google"
+      });
+      loadAppointments();
+    } catch (err) {
+      console.warn("Could not persist appointment to API:", err);
+    }
+
     setNewCustomer("");
     setNewEmail("");
     setIsNewBookingModalOpen(false);

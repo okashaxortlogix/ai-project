@@ -166,5 +166,23 @@ export const api = {
   async getAnalytics() {
     const res = await fetch(`${API_BASE}/analytics/overview`);
     return res.json();
+  },
+
+  // Unified AI Assistant & Agents Chat
+  async chatAI(payload: {
+    message: string;
+    agentType?: 'support' | 'sales' | 'appointment' | 'copilot' | 'assistant';
+    conversationId?: string;
+    customerId?: string;
+    customerName?: string;
+    history?: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
+  }) {
+    const res = await fetch(`${API_BASE}/ai/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
   }
 };
+

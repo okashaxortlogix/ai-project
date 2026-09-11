@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\KnowledgeDocument;
-use App\Services\RAGService;
+use App\Services\Knowledge\RAGService;
 
 class KnowledgeController extends Controller
 {

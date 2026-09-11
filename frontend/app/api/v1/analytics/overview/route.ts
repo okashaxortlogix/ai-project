@@ -7,11 +7,11 @@ export async function GET() {
   const leads = Database.getLeads(org.id);
   const appointments = Database.getAppointments(org.id);
 
-  // Calculate dynamic metrics
-  const totalConversations = 2800 + conversations.length;
-  const totalLeads = 635 + leads.length;
-  const totalAppointments = 180 + appointments.length;
-  const conversionRate = ((totalLeads / totalConversations) * 100).toFixed(1);
+  // Calculate dynamic metrics directly from real database collections
+  const totalConversations = conversations.length;
+  const totalLeads = leads.length;
+  const totalAppointments = appointments.length;
+  const conversionRate = totalConversations > 0 ? ((totalLeads / totalConversations) * 100).toFixed(1) : "0.0";
 
   // Group leads by real source
   const sourceCounts: Record<string, number> = {

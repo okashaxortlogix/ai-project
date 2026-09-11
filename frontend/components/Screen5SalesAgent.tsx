@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { productsList, Product } from "@/lib/data";
+import { api } from "@/lib/api";
 
 interface Screen5SalesAgentProps {
   onAddToCart?: (product: Product) => void;
@@ -33,32 +34,34 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
   const [configSaved, setConfigSaved] = useState(false);
 
   // Sales config
+  const [agentTone, setAgentTone] = useState("Consultative & Persuasive");
+  const [autoDiscountPercent, setAutoDiscountPercent] = useState("10%");
+  const [leadThreshold, setLeadThreshold] = useState("80");
   const [minBudget, setMinBudget] = useState("$500");
   const [autoDiscount, setAutoDiscount] = useState("10% Welcome Promo (CODE: NEXA10)");
   const [pitchAggressiveness, setPitchAggressiveness] = useState("Consultative (Value-first)");
 
-  // Live Chat sandbox
   const [messages, setMessages] = useState([
     {
-      id: "sl-1",
-      sender: "customer",
-      content: "I'm looking for a reliable laptop for work and casual travel. Budget is around $800.",
-      time: "10:10 AM"
+      id: "ai-welcome",
+      sender: "agent",
+      content: "Hello! Looking for the best laptop for your workload? I can help you pick the right specs or match your budget.",
+      time: "10:14 AM"
     },
     {
-      id: "sl-2",
-      sender: "agent",
-      content: "Great to meet you! Based on your budget and portability needs, I highly recommend the MacBook Air M1 ($799) with 18-hr battery life or the Dell Inspiron 15 ($749).\n\nWould you like me to apply our 10% promo code or reserve one for you?",
-      time: "10:11 AM"
+      id: "usr-1",
+      sender: "customer",
+      content: "I need a fast laptop with all-day battery under $800.",
+      time: "10:15 AM"
     }
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [addedItem, setAddedItem] = useState<string | null>(null);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
     const userText = input.trim();
     setMessages((prev) => [
@@ -68,23 +71,56 @@ export default function Screen5SalesAgent({ onAddToCart, onNavigate, isCompact =
     setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      let reply = "Both models include a 1-year warranty and free expedited shipping. Would you like to proceed with the MacBook Air M1?";
+    try {
+      const res = await api.chatAI({
+        message: userText,
+        agentType: "sales",
+        customerName: "Alex Mercer",
+        conversationId: "conv-sales-sandbox",
+        history: messages.slice(-5).map((m) => ({
+          role: m.sender === "customer" ? "user" : "assistant",
+          content: m.content
+        }))
+      });
+
+      // If user confirms buy/add and onAddToCart is provided
       const lower = userText.toLowerCase();
-      if (lower.includes("macbook") || lower.includes("m1")) {
-        reply = "The MacBook Air M1 is in stock and ready to ship today. I can add it to your order with code NEXA10 for $719.10 total!";
-      } else if (lower.includes("dell") || lower.includes("windows")) {
-        reply = "The Dell Inspiron 15 is excellent for multitasking with expandable RAM and dedicated HDMI. Total after promo: $674.10!";
-      } else if (lower.includes("yes") || lower.includes("add") || lower.includes("buy")) {
-        reply = "Awesome! I've placed the recommended item into your cart. Click the Cart icon in the top navigation bar to checkout.";
+      if ((lower.includes("buy") || lower.includes("add") || lower.includes("cart")) && onAddToCart) {
+        if (lower.includes("macbook") || lower.includes("m1")) {
+          const item = productsList.find((p) => p.id.includes("macbook")) || productsList[0];
+          onAddToCart(item);
+          setAddedItem(item.id);
+          setTimeout(() => setAddedItem(null), 2500);
+        } else if (lower.includes("dell")) {
+          const item = productsList.find((p) => p.id.includes("dell")) || productsList[1];
+          onAddToCart(item);
+          setAddedItem(item.id);
+          setTimeout(() => setAddedItem(null), 2500);
+        }
       }
 
       setMessages((prev) => [
         ...prev,
-        { id: `ai-${Date.now()}`, sender: "agent", content: reply, time: "Just now" }
+        {
+          id: `ai-${Date.now()}`,
+          sender: "agent",
+          content: res.reply || "Both models include a 1-year warranty and free expedited shipping. Would you like to proceed?",
+          time: "Just now"
+        }
       ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          sender: "agent",
+          content: "I'm having a brief issue retrieving catalog pricing. Please give me a second and try again!",
+          time: "Just now"
+        }
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 850);
+    }
   };
 
   const handleAddToCartClick = (prod: Product) => {

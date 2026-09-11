@@ -143,75 +143,46 @@ export default function Screen8Calendar({ isCompact = false }: Screen8CalendarPr
             ))}
           </div>
 
-          {/* Time Slot Rows & Chips */}
+          {/* Time Slot Rows & Chips Rendered Dynamically from State */}
           <div className="p-3 space-y-2.5 min-h-[300px]">
-            {/* 10:00 AM Slot */}
-            <div className="flex items-start gap-2 pt-1">
-              <span className="text-[10px] font-semibold text-slate-400 w-14 shrink-0">10:00 AM</span>
-              <div className="flex-1 border-t border-slate-100 pt-1">
-                <div
-                  onClick={() => setSelectedAppointment(appointments[1] || appointments[0])}
-                  className="p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold hover:bg-blue-100/70 transition-all cursor-pointer flex items-center justify-between shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                    <span>Client Call — Mike Wilson</span>
-                  </div>
-                  <span className="text-[10px] text-blue-600 font-normal">10:00 - 11:00 AM</span>
-                </div>
+            {appointments.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs">
+                No appointments scheduled for this date. Click "+ New Appointment" to schedule.
               </div>
-            </div>
+            ) : (
+              appointments.slice(0, 5).map((apt, idx) => {
+                const colorStyles = [
+                  "bg-blue-50 border-blue-200 text-blue-900 bg-dot-blue-600",
+                  "bg-emerald-50 border-emerald-200 text-emerald-900 bg-dot-emerald-600",
+                  "bg-amber-50 border-amber-200 text-amber-900 bg-dot-amber-500",
+                  "bg-purple-50 border-purple-200 text-purple-900 bg-dot-purple-600",
+                  "bg-rose-50 border-rose-200 text-rose-900 bg-dot-rose-500"
+                ];
+                const dotColors = ["bg-blue-600", "bg-emerald-600", "bg-amber-500", "bg-purple-600", "bg-rose-500"];
+                const color = colorStyles[idx % colorStyles.length];
+                const dot = dotColors[idx % dotColors.length];
 
-            {/* 11:00 AM Slot */}
-            <div className="flex items-start gap-2 pt-1">
-              <span className="text-[10px] font-semibold text-slate-400 w-14 shrink-0">11:00 AM</span>
-              <div className="flex-1 border-t border-slate-100 pt-1">
-                <div
-                  onClick={() => setSelectedAppointment(appointments[3] || appointments[0])}
-                  className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-100/70 transition-all cursor-pointer flex items-center justify-between shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span>Team Meeting — Pipeline Review</span>
+                return (
+                  <div key={apt.id || idx} className="flex items-start gap-2 pt-1">
+                    <span className="text-[10px] font-semibold text-slate-400 w-16 shrink-0">
+                      {apt.time ? apt.time.split(" - ")[0] : "10:00 AM"}
+                    </span>
+                    <div className="flex-1 border-t border-slate-100 pt-1">
+                      <div
+                        onClick={() => setSelectedAppointment(apt)}
+                        className={`p-2 rounded-lg border text-xs font-semibold hover:opacity-90 transition-all cursor-pointer flex items-center justify-between shadow-2xs ${color}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${dot}`}></span>
+                          <span>{apt.title} — {apt.customer_name}</span>
+                        </div>
+                        <span className="text-[10px] opacity-75 font-normal">{apt.time || "30 mins"}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[10px] text-amber-600 font-normal">11:00 AM - 12:00 PM</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 2:00 PM Slot */}
-            <div className="flex items-start gap-2 pt-1">
-              <span className="text-[10px] font-semibold text-slate-400 w-14 shrink-0">2:00 PM</span>
-              <div className="flex-1 border-t border-slate-100 pt-1">
-                <div
-                  onClick={() => setSelectedAppointment(appointments[0])}
-                  className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold hover:bg-emerald-100/70 transition-all cursor-pointer flex items-center justify-between shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                    <span>Demo Call — Sarah Johnson</span>
-                  </div>
-                  <span className="text-[10px] text-emerald-600 font-normal">2:00 - 2:30 PM</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 4:00 PM Slot */}
-            <div className="flex items-start gap-2 pt-1">
-              <span className="text-[10px] font-semibold text-slate-400 w-14 shrink-0">4:00 PM</span>
-              <div className="flex-1 border-t border-slate-100 pt-1 space-y-1.5">
-                <div
-                  onClick={() => setSelectedAppointment(appointments[4] || appointments[0])}
-                  className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-900 text-xs font-semibold hover:bg-rose-100/70 transition-all cursor-pointer flex items-center justify-between shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                    <span>Product Demo — James Miller</span>
-                  </div>
-                  <span className="text-[10px] text-rose-600 font-normal">4:00 - 5:00 PM</span>
-                </div>
-              </div>
-            </div>
+                );
+              })
+            )}
           </div>
         </div>
 

@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
+import { api } from "@/lib/api";
 
 interface Screen13MobileViewProps {
   onNavigate?: (screen: number) => void;
@@ -94,6 +95,7 @@ export default function Screen13MobileView({ onNavigate, isCompact = false }: Sc
     { sender: "ai", text: "Hi! I'm your AI assistant. How can I help you today?", time: "10:00 AM" }
   ]);
   const [mobileInput, setMobileInput] = useState("");
+  const [isMobileTyping, setIsMobileTyping] = useState(false);
 
   const handleOpenConfig = (channel: ChannelItem) => {
     setConfiguringChannel(channel);
@@ -114,9 +116,9 @@ export default function Screen13MobileView({ onNavigate, isCompact = false }: Sc
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const handleMobileSend = (e: React.FormEvent) => {
+  const handleMobileSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mobileInput.trim()) return;
+    if (!mobileInput.trim() || isMobileTyping) return;
 
     const userText = mobileInput.trim();
     setMobileMessages((prev) => [
@@ -124,17 +126,34 @@ export default function Screen13MobileView({ onNavigate, isCompact = false }: Sc
       { sender: "user", text: userText, time: "Just now" }
     ]);
     setMobileInput("");
+    setIsMobileTyping(true);
 
-    setTimeout(() => {
+    try {
+      const res = await api.chatAI({
+        message: userText,
+        customerName: "Mobile User"
+      });
+
       setMobileMessages((prev) => [
         ...prev,
         {
           sender: "ai",
-          text: "Thanks for reaching out! I've logged your request and can help schedule or resolve any question.",
+          text: res?.reply || "Thanks for reaching out! I've logged your request.",
           time: "Just now"
         }
       ]);
-    }, 700);
+    } catch (err) {
+      setMobileMessages((prev) => [
+        ...prev,
+        {
+          sender: "ai",
+          text: "I'm experiencing a temporary network connection error. Please try again.",
+          time: "Just now"
+        }
+      ]);
+    } finally {
+      setIsMobileTyping(false);
+    }
   };
 
   return (

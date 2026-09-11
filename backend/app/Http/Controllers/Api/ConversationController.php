@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Customer;
-use App\Services\AgentRouter;
+use App\Services\Agents\AgentRouter;
 
 class ConversationController extends Controller
 {
@@ -89,7 +89,36 @@ class ConversationController extends Controller
 
         // 2. AI Orchestrator Execution
         $router = new AgentRouter();
-        $aiResponse = $router->route($conv, $validated['content']);
+        $agent = $router->route($conv, $validated['content']);
+        $intent = $router->detectIntent($validated['content']);
+
+        // Contextual RAG grounding
+        $rag = new \App\Services\Knowledge\RAGService();
+        $ragChunks = $rag->search($conv->organization_id, $validated['content']);
+        $ragGrounding = !empty($ragChunks) ? $ragChunks[0]['chunk'] : null;
+
+        $reply = "I'm happy to help you with that! As your {$agent->name}, I can assist with product recommendations, order tracking, and scheduling.";
+        if ($intent === 'appointment') {
+            $reply = "I'd be glad to schedule an appointment for you! We have openings tomorrow at 10:00 AM, 11:30 AM, and 2:00 PM. Which time works best for you?";
+        } elseif ($intent === 'sales') {
+            $reply = "Great question! Our top-rated models are the MacBook Air M1 ($799) and Dell Inspiron 15 ($749). Both include free express shipping and warranty. Would you like to reserve one or discuss special discount packages?";
+        } elseif ($intent === 'support') {
+            if ($ragGrounding) {
+                $reply = $ragGrounding . " Let me know if you would like me to look up tracking details for a specific order!";
+            } else {
+                $reply = "I can help track your order, process returns, or resolve any delivery issues. Please provide your order number!";
+            }
+        } elseif ($intent === 'human_request') {
+            $reply = "I understand. I have prioritized your request and transferred your conversation to our senior human representative. Someone will reply shortly.";
+        }
+
+        $aiResponse = [
+            'reply' => $reply,
+            'agent_type' => $agent->type ?? 'support',
+            'agent_name' => $agent->name ?? 'AI Assistant',
+            'tool_executed' => null,
+            'grounded_source' => !empty($ragChunks) ? $ragChunks[0]['source'] : null,
+        ];
 
         // 3. Store Agent Message
         $agentMsg = Message::create([

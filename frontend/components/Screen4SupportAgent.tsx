@@ -24,6 +24,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
+import { api } from "@/lib/api";
+
 
 interface Screen4SupportAgentProps {
   onNavigate?: (screen: number) => void;
@@ -65,14 +67,14 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || isTyping) return;
 
     const userText = chatInput.trim();
     const newMsg = {
       id: `usr-${Date.now()}`,
-      sender: "customer",
+      sender: "customer" as const,
       content: userText,
       time: "Just now"
     };
@@ -81,29 +83,40 @@ export default function Screen4SupportAgent({ onNavigate, isCompact = false }: S
     setChatInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      let replyText = "I've checked our database. I can assist you with your order updates and shipping questions.";
-      const lower = userText.toLowerCase();
-
-      if (lower.includes("address") || lower.includes("office")) {
-        replyText = "Because package #12345 is already in final dispatch with FedEx, direct rerouting must be authorized via FedEx Delivery Manager. I've sent a 1-click update link to your registered mobile number!";
-      } else if (lower.includes("return") || lower.includes("refund")) {
-        replyText = "We offer 30-day hassle-free returns. Items must be in original condition with tags attached. You can generate a prepaid shipping label directly from your customer portal.";
-      } else if (lower.includes("human") || lower.includes("agent") || lower.includes("manager")) {
-        replyText = "I understand! I'm transferring this conversation to our senior human support supervisor, Sarah. She will be with you shortly.";
-      }
+    try {
+      const res = await api.chatAI({
+        message: userText,
+        agentType: "support",
+        customerName: "Sara Jenkins",
+        conversationId: "conv-support-sandbox",
+        history: messages.slice(-5).map((m) => ({
+          role: m.sender === "customer" ? "user" : "assistant",
+          content: m.content
+        }))
+      });
 
       setMessages((prev) => [
         ...prev,
         {
           id: `ai-${Date.now()}`,
           sender: "agent",
-          content: replyText,
+          content: res.reply || "I've checked our records and can assist you with your order updates and shipping inquiries.",
           time: "Just now"
         }
       ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          sender: "agent",
+          content: "I apologize, our support agent engine is currently reconnecting. Please try again in a moment.",
+          time: "Just now"
+        }
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 900);
+    }
   };
 
   const handleFaqClick = (faqQuestion: string) => {
