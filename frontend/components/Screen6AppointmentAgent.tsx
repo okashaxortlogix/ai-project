@@ -2,346 +2,702 @@
 
 import React, { useState } from "react";
 import {
-  Calendar,
-  Clock,
+  Calendar as CalendarIcon,
+  Check,
   CheckCircle2,
-  CalendarDays,
+  Clock,
   Send,
+  Plus,
+  Sliders,
   CalendarCheck,
-  RotateCcw,
-  Ban,
-  Share2,
-  Check
+  ArrowRight,
+  User,
+  MoreVertical,
+  X,
+  AlertCircle
 } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Modal } from "@/components/ui/Modal";
 
 interface Screen6AppointmentAgentProps {
+  onNavigate?: (screen: number) => void;
   isCompact?: boolean;
 }
 
-export default function Screen6AppointmentAgent({ isCompact = false }: Screen6AppointmentAgentProps) {
-  const [selectedSlot, setSelectedSlot] = useState("2:00 PM");
-  const [appointmentStatus, setAppointmentStatus] = useState<"Confirmed" | "Rescheduled" | "Cancelled">("Confirmed");
-  const [syncedCalendar, setSyncedCalendar] = useState<"Google" | "Outlook" | null>("Google");
-  const [messages, setMessages] = useState([
+interface AppointmentItem {
+  id: string;
+  time: string;
+  customer: string;
+  email: string;
+  appointmentType: string;
+  status: "Confirmed" | "Pending" | "Rescheduled" | "Cancelled";
+}
+
+export default function Screen6AppointmentAgent({ onNavigate, isCompact = false }: Screen6AppointmentAgentProps) {
+  const [activeTab, setActiveTab] = useState<"Overview" | "Availability" | "Live Booking Chat" | "Settings">("Overview");
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentItem | null>(null);
+  const [configSaved, setConfigSaved] = useState(false);
+
+  // Appointments List matching Screen 9
+  const [appointments, setAppointments] = useState<AppointmentItem[]>([
     {
       id: "apt-1",
-      sender: "customer",
-      content: "I want to book a demo.",
-      time: "10:20 AM"
+      time: "10:00 AM",
+      customer: "Sarah Ahmed",
+      email: "sarah@gmail.com",
+      appointmentType: "Dental Cleaning",
+      status: "Confirmed"
     },
     {
       id: "apt-2",
-      sender: "agent",
-      content: "Sure! I'd be happy to help you book a demo. What day works best for you?",
-      time: "10:21 AM"
+      time: "11:30 AM",
+      customer: "Ali Raza",
+      email: "ali.raza@acme.com",
+      appointmentType: "Consultation",
+      status: "Confirmed"
     },
     {
       id: "apt-3",
-      sender: "customer",
-      content: "Tomorrow works for me.",
-      time: "10:22 AM"
-    },
-    {
-      id: "apt-4",
-      sender: "agent",
-      content: "Here are the available slots for tomorrow:\n• 10:00 AM\n• 11:30 AM\n• 2:00 PM\n• 4:30 PM\n\nWhich one would you like to choose?",
-      hasSlots: true,
-      time: "10:23 AM"
-    },
-    {
-      id: "apt-5",
-      sender: "customer",
-      content: "2:00 PM",
-      time: "10:24 AM"
-    },
-    {
-      id: "apt-6",
-      sender: "agent",
-      content: "Perfect! Your demo is booked for tomorrow at 2:00 PM. You will receive a calendar invite shortly.",
-      time: "10:25 AM"
+      time: "02:00 PM",
+      customer: "Fatima Khan",
+      email: "fatima@acme.com",
+      appointmentType: "Follow-up",
+      status: "Confirmed"
     }
   ]);
 
-  const [input, setInput] = useState("");
+  // Form state for creating appointment
+  const [newCustomer, setNewCustomer] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newTime, setNewTime] = useState("03:30 PM");
+  const [newType, setNewType] = useState("Discovery Call");
 
-  const handleSelectSlot = (slot: string) => {
-    setSelectedSlot(slot);
-    setAppointmentStatus("Confirmed");
+  // Config parameters
+  const [bufferTime, setBufferTime] = useState("15 minutes");
+  const [meetingDuration, setMeetingDuration] = useState("30 minutes");
+  const [syncedCalendar, setSyncedCalendar] = useState("Google Calendar (Primary)");
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `c-${Date.now()}`,
-        sender: "customer",
-        content: `I'd prefer ${slot}, please.`,
-        time: "Just now"
-      },
-      {
-        id: `a-${Date.now() + 1}`,
-        sender: "agent",
-        content: `Excellent! I have locked in ${slot} for tomorrow, Apr 29, 2025. Synced with Google Calendar & Outlook.`,
-        time: "Just now"
-      }
-    ]);
-  };
+  // Interactive Live Chat Sandbox
+  const [messages, setMessages] = useState([
+    {
+      id: "m-1",
+      sender: "customer",
+      content: "Hi, I'd like to book an appointment for dental cleaning this week.",
+      time: "09:42 AM"
+    },
+    {
+      id: "m-2",
+      sender: "agent",
+      content: "Hello Sarah! I'd be happy to schedule your Dental Cleaning. We have the following slots open tomorrow:\n• 10:00 AM\n• 11:30 AM\n• 02:00 PM\n\nWhich time works best for you?",
+      time: "09:43 AM"
+    },
+    {
+      id: "m-3",
+      sender: "customer",
+      content: "10:00 AM is great for me.",
+      time: "09:45 AM"
+    },
+    {
+      id: "m-4",
+      sender: "agent",
+      content: "Done! Your Dental Cleaning is confirmed for tomorrow at 10:00 AM. I've dispatched calendar invitations and an SMS confirmation.",
+      time: "09:45 AM"
+    }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!chatInput.trim()) return;
 
-    const userText = input;
+    const userText = chatInput.trim();
     setMessages((prev) => [
       ...prev,
-      {
-        id: `u-${Date.now()}`,
-        sender: "customer",
-        content: userText,
-        time: "Just now"
-      }
+      { id: `usr-${Date.now()}`, sender: "customer", content: userText, time: "Just now" }
     ]);
-    setInput("");
+    setChatInput("");
+    setIsTyping(true);
 
     setTimeout(() => {
+      let reply = "I can help check our real-time calendar availability or reschedule any confirmed slot.";
+      const lower = userText.toLowerCase();
+
+      if (lower.includes("reschedule") || lower.includes("change")) {
+        reply = "Certainly! Would you like to move your appointment to 11:30 AM or 02:00 PM instead?";
+      } else if (lower.includes("cancel")) {
+        reply = "Your appointment has been cancelled. A confirmation email has been dispatched. Feel free to rebook whenever you are ready!";
+      } else if (lower.includes("slot") || lower.includes("tomorrow") || lower.includes("time")) {
+        reply = "Tomorrow we have 10:00 AM, 11:30 AM, and 02:00 PM open. Let me know your preference and I will reserve it instantly!";
+      }
+
       setMessages((prev) => [
         ...prev,
-        {
-          id: `ai-${Date.now()}`,
-          sender: "agent",
-          content: "I have updated your scheduling preferences. A calendar invite with Google Meet link has been dispatched to your email.",
-          time: "Just now"
-        }
+        { id: `ai-${Date.now()}`, sender: "agent", content: reply, time: "Just now" }
       ]);
-    }, 700);
+      setIsTyping(false);
+    }, 850);
+  };
+
+  const handleCreateBooking = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomer.trim() || !newEmail.trim()) return;
+
+    const newApt: AppointmentItem = {
+      id: `apt-${Date.now()}`,
+      time: newTime,
+      customer: newCustomer,
+      email: newEmail,
+      appointmentType: newType,
+      status: "Confirmed"
+    };
+
+    setAppointments((prev) => [...prev, newApt]);
+    setNewCustomer("");
+    setNewEmail("");
+    setIsNewBookingModalOpen(false);
+  };
+
+  const handleSaveConfig = () => {
+    setConfigSaved(true);
+    setIsConfigModalOpen(false);
+    setTimeout(() => setConfigSaved(false), 2500);
   };
 
   return (
-    <div className={`w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col ${isCompact ? "text-xs" : ""}`}>
-      {/* Top Banner */}
-      <div className="p-3.5 bg-[#1E143A] text-white flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#8B5CF6] flex items-center justify-center shadow-md">
-            <Calendar className="w-4 h-4 text-white" />
-          </div>
+    <div className="p-6 max-w-[1400px] mx-auto space-y-6">
+      {/* Breadcrumb & Header matching Screen 9 */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+          <span
+            onClick={() => onNavigate?.(2)}
+            className="cursor-pointer hover:text-blue-600 transition-colors"
+          >
+            Home
+          </span>
+          <span>/</span>
+          <span className="text-slate-800 font-semibold">Appointment Agent</span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="text-xs font-bold flex items-center gap-1.5 text-white">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
               Appointment Agent
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            </div>
-            <p className="text-[10px] text-purple-200">
-              Calendar Booking & Two-Way Real-time Synchronization
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Book and manages appointments automatically.
             </p>
           </div>
-        </div>
 
-        <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded text-[11px] font-medium">
-          Live Calendar Sync
-        </span>
+          <div className="flex items-center gap-3">
+            <StatusBadge variant="active" label="Active" />
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Sliders}
+              onClick={() => setIsConfigModalOpen(true)}
+            >
+              Configure
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Main Two Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-12 min-h-[440px]">
-        {/* Left Chat Window */}
-        <div className="md:col-span-7 p-4 flex flex-col justify-between border-r border-slate-200 bg-slate-50/50">
-          <div className="space-y-3 overflow-y-auto max-h-[360px] pr-1">
-            {messages.map((m) => {
-              const isCust = m.sender === "customer";
-              return (
-                <div
-                  key={m.id}
-                  className={`flex gap-2.5 max-w-[88%] ${
-                    isCust ? "ml-auto flex-row-reverse" : "mr-auto"
-                  }`}
-                >
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${
-                      isCust ? "bg-blue-600 text-white" : "bg-[#8B5CF6] text-white"
-                    }`}
+      {configSaved && (
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-2 rounded-lg text-xs font-semibold animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>Calendar and booking rules updated successfully.</span>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-slate-200">
+        {[
+          { id: "Overview", label: "Overview" },
+          { id: "Availability", label: "Availability & Buffer" },
+          { id: "Live Booking Chat", label: "Live Booking Sandbox" },
+          { id: "Settings", label: "Settings" }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+              activeTab === tab.id
+                ? "border-blue-600 text-blue-600 bg-blue-50/50 rounded-t-lg"
+                : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* TAB 1: OVERVIEW matching Screen 9 */}
+      {activeTab === "Overview" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Capabilities Card */}
+            <Card className="p-6">
+              <h2 className="text-sm font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
+                Capabilities
+              </h2>
+              <ul className="space-y-3 text-xs text-slate-700">
+                {[
+                  "Check available slots",
+                  "Book appointments",
+                  "Send confirmations",
+                  "Reschedule / cancel",
+                  "Real-time Google & GHL Calendar synchronization"
+                ].map((cap, i) => (
+                  <li key={i} className="flex items-center gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 stroke-[2.5]" />
+                    </div>
+                    <span>{cap}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            {/* Upcoming Appointments Card matching Screen 9 */}
+            <Card className="p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-4">
+                  <h2 className="text-sm font-bold text-slate-900">
+                    Upcoming Appointments
+                  </h2>
+                  <button
+                    onClick={() => setIsNewBookingModalOpen(true)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 cursor-pointer flex items-center gap-1"
                   >
-                    {isCust ? "U" : <Calendar className="w-3.5 h-3.5" />}
-                  </div>
+                    <Plus className="w-3.5 h-3.5" /> New Booking
+                  </button>
+                </div>
 
-                  <div>
+                <div className="space-y-3">
+                  {appointments.map((apt) => (
                     <div
-                      className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                        isCust
-                          ? "bg-[#1677FF] text-white rounded-tr-xs"
-                          : "bg-white text-slate-800 border border-slate-200 shadow-xs rounded-tl-xs"
-                      }`}
+                      key={apt.id}
+                      onClick={() => setSelectedAppointment(apt)}
+                      className="p-3 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-colors flex items-center justify-between cursor-pointer"
                     >
-                      <p className="whitespace-pre-line">{m.content}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md">
+                          {apt.time}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">{apt.appointmentType}</div>
+                          <div className="text-[11px] text-slate-500">{apt.customer}</div>
+                        </div>
+                      </div>
+                      <StatusBadge variant="active" label={apt.status} />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-                      {/* Interactive Time Slot Pills if applicable */}
-                      {m.hasSlots && (
-                        <div className="mt-3 pt-2 border-t border-slate-100">
-                          <div className="text-[10px] text-slate-500 font-semibold mb-1.5">
-                            Click to select a slot:
-                          </div>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {["10:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"].map((slot) => (
-                              <button
-                                key={slot}
-                                onClick={() => handleSelectSlot(slot)}
-                                className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                                  selectedSlot === slot
-                                    ? "bg-[#8B5CF6] text-white shadow-xs"
-                                    : "bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700"
-                                }`}
-                              >
-                                <Clock className="w-3 h-3" />
-                                <span>{slot}</span>
-                              </button>
-                            ))}
-                          </div>
+              <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onNavigate?.(8)}
+                >
+                  View Full Calendar
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={() => setIsNewBookingModalOpen(true)}
+                >
+                  Create Appointment
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          {/* Quick Action Link to Sandbox */}
+          <Card className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Simulate Booking Conversation
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Test autonomous booking, rescheduling, and cancellation responses in real-time.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={ArrowRight}
+                onClick={() => setActiveTab("Live Booking Chat")}
+              >
+                Open Booking Sandbox
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* TAB 2: AVAILABILITY & BUFFER */}
+      {activeTab === "Availability" && (
+        <Card className="p-6 space-y-6 max-w-3xl">
+          <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
+            Booking Windows & Working Hours
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Working Days
+              </label>
+              <div className="text-xs text-slate-600 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                Monday — Saturday (9:00 AM – 6:00 PM PKT)
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Buffer Between Meetings
+              </label>
+              <select
+                value={bufferTime}
+                onChange={(e) => setBufferTime(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+              >
+                <option value="10 minutes">10 minutes</option>
+                <option value="15 minutes">15 minutes</option>
+                <option value="30 minutes">30 minutes</option>
+              </select>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* TAB 3: LIVE BOOKING CHAT */}
+      {activeTab === "Live Booking Chat" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card className="flex flex-col h-[520px]">
+              <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                    <CalendarCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Appointment Agent</div>
+                    <div className="text-[10px] text-emerald-600 font-semibold">
+                      ● Active • Calendar synced
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] text-slate-400">Google Calendar Synced</span>
+              </div>
+
+              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#F8FAFC]/50">
+                {messages.map((m) => {
+                  const isAgent = m.sender === "agent";
+                  return (
+                    <div
+                      key={m.id}
+                      className={`flex gap-2.5 ${isAgent ? "justify-start" : "justify-end"}`}
+                    >
+                      {isAgent && (
+                        <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs shrink-0 font-bold">
+                          AI
                         </div>
                       )}
+                      <div
+                        className={`max-w-md p-3 rounded-xl text-xs leading-relaxed ${
+                          isAgent
+                            ? "bg-white border border-slate-200 text-slate-800 shadow-2xs"
+                            : "bg-blue-600 text-white shadow-2xs"
+                        }`}
+                      >
+                        <div className="whitespace-pre-line">{m.content}</div>
+                        <div
+                          className={`text-[9px] mt-1 text-right ${
+                            isAgent ? "text-slate-400" : "text-blue-200"
+                          }`}
+                        >
+                          {m.time}
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-1 block">
-                      {m.time}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+                {isTyping && (
+                  <div className="text-xs text-slate-400 pl-9">Appointment agent is replying...</div>
+                )}
+              </div>
+
+              <form
+                onSubmit={handleSendMessage}
+                className="p-3 border-t border-slate-100 bg-white flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  placeholder="Ask about slots, book, or reschedule..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+                <Button type="submit" variant="primary" size="sm" icon={Send}>
+                  Send
+                </Button>
+              </form>
+            </Card>
           </div>
 
-          {/* Quick Chat Input */}
-          <form onSubmit={handleSend} className="mt-3 pt-2 border-t border-slate-200 flex items-center gap-2">
+          <div className="space-y-4">
+            <Card className="p-4 space-y-3">
+              <div className="text-xs font-bold text-slate-900 pb-2 border-b border-slate-100">
+                Quick Test Prompts
+              </div>
+              {[
+                "What slots are open tomorrow?",
+                "Can you reschedule my appointment to 2 PM?",
+                "Cancel my reservation for dental cleaning."
+              ].map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => setChatInput(q)}
+                  className="w-full text-left p-2.5 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-colors text-xs text-slate-700 cursor-pointer block"
+                >
+                  "{q}"
+                </button>
+              ))}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: SETTINGS */}
+      {activeTab === "Settings" && (
+        <Card className="p-6 max-w-2xl space-y-4">
+          <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
+            Calendar Integration Settings
+          </h2>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Primary Calendar Provider
+            </label>
+            <select
+              value={syncedCalendar}
+              onChange={(e) => setSyncedCalendar(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+            >
+              <option value="Google Calendar (Primary)">Google Calendar (Primary)</option>
+              <option value="GoHighLevel Native Calendar">GoHighLevel Native Calendar</option>
+              <option value="Outlook 365">Outlook 365</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Default Meeting Duration
+            </label>
+            <select
+              value={meetingDuration}
+              onChange={(e) => setMeetingDuration(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+            >
+              <option value="15 minutes">15 minutes</option>
+              <option value="30 minutes">30 minutes</option>
+              <option value="45 minutes">45 minutes</option>
+              <option value="60 minutes">60 minutes</option>
+            </select>
+          </div>
+          <div className="pt-2">
+            <Button variant="primary" size="sm" onClick={() => setActiveTab("Overview")}>
+              Save Calendar Settings
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Create Appointment Modal */}
+      <Modal
+        isOpen={isNewBookingModalOpen}
+        onClose={() => setIsNewBookingModalOpen(false)}
+        title="Create Appointment"
+        description="Manually book a time slot on the synchronized calendar."
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setIsNewBookingModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleCreateBooking}>
+              Confirm Booking
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleCreateBooking} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Customer Name
+            </label>
             <input
               type="text"
-              placeholder="Ask appointment agent (e.g. 'Can we reschedule to Friday?')..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              placeholder="e.g. Usman Tariq"
+              value={newCustomer}
+              onChange={(e) => setNewCustomer(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+              required
             />
-            <button
-              type="submit"
-              className="p-2 rounded-lg bg-[#8B5CF6] hover:bg-purple-700 text-white transition-all cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
-        </div>
-
-        {/* Right Appointment Details & Calendar Integrations */}
-        <div className="md:col-span-5 p-4 bg-white flex flex-col justify-between space-y-4">
-          {/* Appointment Details Card */}
-          <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70">
-            <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-200/80">
-              <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900">
-                <CalendarDays className="w-4 h-4 text-purple-600" />
-                <span>Appointment Details</span>
-              </div>
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                  appointmentStatus === "Confirmed"
-                    ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                    : appointmentStatus === "Rescheduled"
-                    ? "bg-blue-100 text-blue-700 border-blue-200"
-                    : "bg-red-100 text-red-700 border-red-200"
-                }`}
-              >
-                {appointmentStatus}
-              </span>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-400 text-[11px]">Appointment:</span>
-                <span className="font-semibold text-slate-800">Demo Call</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400 text-[11px]">Date:</span>
-                <span className="font-semibold text-slate-800">Tomorrow, Apr 29, 2025</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400 text-[11px]">Time:</span>
-                <span className="font-semibold text-purple-700">
-                  {selectedSlot} - {selectedSlot === "2:00 PM" ? "2:30 PM" : "End"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400 text-[11px]">Calendar:</span>
-                <span className="font-medium text-slate-700">Google Calendar</span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-200/80">
-              <button
-                onClick={() => {
-                  setAppointmentStatus("Rescheduled");
-                  alert("Rescheduling mode enabled! Choose a new slot from the options above.");
-                }}
-                className="py-1.5 px-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3 text-slate-500" />
-                <span>Reschedule</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setAppointmentStatus("Cancelled");
-                  alert("Appointment cancelled. Customer and team notified.");
-                }}
-                className="py-1.5 px-2.5 bg-white hover:bg-red-50 border border-slate-200 text-red-600 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
-              >
-                <Ban className="w-3 h-3 text-red-500" />
-                <span>Cancel</span>
-              </button>
-            </div>
           </div>
-
-          {/* Add to Calendar Section */}
           <div>
-            <div className="text-xs font-bold text-slate-900 mb-2 flex items-center justify-between">
-              <span>Add to Calendar</span>
-              <span className="text-[10px] text-slate-400 font-normal">One-click sync</span>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Customer Email
+            </label>
+            <input
+              type="email"
+              placeholder="usman@gmail.com"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Time Slot
+              </label>
+              <select
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+              >
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="11:30 AM">11:30 AM</option>
+                <option value="02:00 PM">02:00 PM</option>
+                <option value="03:30 PM">03:30 PM</option>
+                <option value="05:00 PM">05:00 PM</option>
+              </select>
             </div>
-
-            <div className="space-y-2">
-              <button
-                onClick={() => {
-                  setSyncedCalendar("Google");
-                  alert("Added to Google Calendar with Meet link!");
-                }}
-                className={`w-full p-2 rounded-lg border text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
-                  syncedCalendar === "Google"
-                    ? "bg-blue-50/60 border-blue-300 text-blue-900"
-                    : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
-                    G
-                  </div>
-                  <span>Google Calendar</span>
-                </div>
-                {syncedCalendar === "Google" && <Check className="w-3.5 h-3.5 text-blue-600" />}
-              </button>
-
-              <button
-                onClick={() => {
-                  setSyncedCalendar("Outlook");
-                  alert("Added to Outlook 365 calendar!");
-                }}
-                className={`w-full p-2 rounded-lg border text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
-                  syncedCalendar === "Outlook"
-                    ? "bg-blue-50/60 border-blue-300 text-blue-900"
-                    : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded bg-[#0078D4] text-white flex items-center justify-center text-[10px] font-bold">
-                    O
-                  </div>
-                  <span>Outlook</span>
-                </div>
-                {syncedCalendar === "Outlook" && <Check className="w-3.5 h-3.5 text-blue-600" />}
-              </button>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Appointment Type
+              </label>
+              <input
+                type="text"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+              />
             </div>
           </div>
+        </form>
+      </Modal>
+
+      {/* Appointment Detail Modal */}
+      {selectedAppointment && (
+        <Modal
+          isOpen={!!selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          title="Appointment Details"
+          description={`Scheduled with ${selectedAppointment.customer}`}
+          size="md"
+          footer={
+            <div className="flex items-center justify-between w-full">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setAppointments((prev) =>
+                    prev.filter((a) => a.id !== selectedAppointment.id)
+                  );
+                  setSelectedAppointment(null);
+                }}
+              >
+                Cancel Appointment
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setSelectedAppointment(null)}>
+                Close
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <span className="text-slate-500">Customer</span>
+              <span className="font-semibold text-slate-900">{selectedAppointment.customer}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <span className="text-slate-500">Email</span>
+              <span className="font-semibold text-slate-900">{selectedAppointment.email}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <span className="text-slate-500">Time</span>
+              <span className="font-semibold text-slate-900">{selectedAppointment.time}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-b border-slate-100">
+              <span className="text-slate-500">Service</span>
+              <span className="font-semibold text-slate-900">{selectedAppointment.appointmentType}</span>
+            </div>
+            <div className="flex justify-between py-1.5">
+              <span className="text-slate-500">Status</span>
+              <StatusBadge variant="active" label={selectedAppointment.status} />
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Configure Modal */}
+      <Modal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        title="Configure Appointment Agent"
+        description="Adjust booking rules, durations, and calendar sync."
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setIsConfigModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleSaveConfig}>
+              Save Changes
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Primary Calendar
+            </label>
+            <select
+              value={syncedCalendar}
+              onChange={(e) => setSyncedCalendar(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+            >
+              <option value="Google Calendar (Primary)">Google Calendar (Primary)</option>
+              <option value="GoHighLevel Native Calendar">GoHighLevel Native Calendar</option>
+              <option value="Outlook 365">Outlook 365</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Default Slot Duration
+            </label>
+            <select
+              value={meetingDuration}
+              onChange={(e) => setMeetingDuration(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900"
+            >
+              <option value="15 minutes">15 minutes</option>
+              <option value="30 minutes">30 minutes</option>
+              <option value="45 minutes">45 minutes</option>
+              <option value="60 minutes">60 minutes</option>
+            </select>
+          </div>
         </div>
-      </div>
+      </Modal>
     </div>
   );
 }

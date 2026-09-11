@@ -8,55 +8,43 @@ import {
   TrendingUp,
   MessageSquare,
   Users,
-  CalendarCheck,
-  Percent,
-  PieChart,
-  ArrowUpRight
+  CheckCircle2,
+  Clock,
+  Zap,
+  Target
 } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api } from "@/lib/api";
 
 interface Screen11AnalyticsProps {
+  onNavigate?: (screen: number) => void;
   isCompact?: boolean;
 }
 
-export default function Screen11Analytics({ isCompact = false }: Screen11AnalyticsProps) {
-  const [dateRange, setDateRange] = useState("Apr 29, 2025 – May 5, 2025");
-  const [data, setData] = useState<any>({
-    metrics: {
-      conversations: 2847,
-      conversations_growth: "+12%",
-      leads: 642,
-      leads_growth: "+18%",
-      appointments: 186,
-      appointments_growth: "+24%",
-      conversion_rate: "6.5%",
-      conversion_growth: "+2.1%"
-    },
-    lead_sources: [
-      { name: "Website", pct: 45, color: "#1677FF" },
-      { name: "Facebook", pct: 25, color: "#10C8C8" },
-      { name: "Google Ads", pct: 18, color: "#8B5CF6" },
-      { name: "Referral", pct: 8, color: "#20B486" },
-      { name: "Other", pct: 4, color: "#F5B942" }
-    ],
-    trend: [
-      { day: "Apr 28", conversations: 2300, leads: 480 },
-      { day: "Apr 29", conversations: 2450, leads: 520 },
-      { day: "Apr 30", conversations: 2847, leads: 642 },
-      { day: "May 1", conversations: 2700, leads: 590 },
-      { day: "May 2", conversations: 3100, leads: 690 },
-      { day: "May 3", conversations: 2900, leads: 630 },
-      { day: "May 4", conversations: 3200, leads: 710 },
-      { day: "May 5", conversations: 3350, leads: 740 }
-    ]
+export default function Screen11Analytics({ onNavigate, isCompact = false }: Screen11AnalyticsProps) {
+  const [dateRange, setDateRange] = useState("Last 30 Days");
+  const [data, setData] = useState({
+    totalConversations: "2,847",
+    resolutionRate: "92.4%",
+    avgResponseTime: "1.2s",
+    appointments: "186",
+    salesConversions: "18.2%"
   });
 
   useEffect(() => {
     async function load() {
       try {
         const res = await api.getAnalytics();
-        if (res.success && res.data) {
-          setData(res.data);
+        if (res.success && res.data && res.data.metrics) {
+          setData({
+            totalConversations: res.data.metrics.conversations?.toLocaleString() || "2,847",
+            resolutionRate: "92.4%",
+            avgResponseTime: "1.2s",
+            appointments: res.data.metrics.appointments?.toString() || "186",
+            salesConversions: "18.2%"
+          });
         }
       } catch (e) {
         console.error("Analytics fetch error", e);
@@ -66,207 +54,161 @@ export default function Screen11Analytics({ isCompact = false }: Screen11Analyti
   }, []);
 
   const handleExport = () => {
-    alert("Analytics PDF summary report generated from live API database.");
+    alert("Exporting clean analytics CSV summary...");
   };
 
-  const metrics = data.metrics;
-  const sources = data.lead_sources || [];
-  const trend = data.trend || [];
-
   return (
-    <div className={`w-full bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col ${isCompact ? "text-xs" : ""}`}>
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-slate-900">Analytics & Reports</h3>
-            <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
-              Live BI Engine (API)
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Full funnel conversation-to-revenue conversion intelligence
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700">
-            <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
-            <span>{dateRange}</span>
-          </div>
-
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1677FF] hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer"
+    <div className="p-6 max-w-[1400px] mx-auto space-y-6">
+      {/* Breadcrumb & Header */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+          <span
+            onClick={() => onNavigate?.(2)}
+            className="cursor-pointer hover:text-blue-600 transition-colors"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export Report</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 4 KPI Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 my-4">
-        <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200">
-          <div className="text-slate-500 text-xs font-medium flex items-center justify-between">
-            <span>Conversations</span>
-            <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
-          </div>
-          <div className="text-xl font-bold text-slate-900 mt-1">{metrics.conversations.toLocaleString()}</div>
-          <div className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-            <ArrowUpRight className="w-2.5 h-2.5" />
-            {metrics.conversations_growth} vs last week
-          </div>
+            Home
+          </span>
+          <span>/</span>
+          <span className="text-slate-800 font-semibold">Analytics & Reports</span>
         </div>
 
-        <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200">
-          <div className="text-slate-500 text-xs font-medium flex items-center justify-between">
-            <span>Leads Generated</span>
-            <Users className="w-3.5 h-3.5 text-teal-600" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Analytics & Reports
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Comprehensive performance metrics across AI conversations, resolution rates, and bookings.
+            </p>
           </div>
-          <div className="text-xl font-bold text-slate-900 mt-1">{metrics.leads.toLocaleString()}</div>
-          <div className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-            <ArrowUpRight className="w-2.5 h-2.5" />
-            {metrics.leads_growth} vs last week
-          </div>
-        </div>
 
-        <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200">
-          <div className="text-slate-500 text-xs font-medium flex items-center justify-between">
-            <span>Appointments Booked</span>
-            <CalendarCheck className="w-3.5 h-3.5 text-purple-600" />
-          </div>
-          <div className="text-xl font-bold text-slate-900 mt-1">{metrics.appointments.toLocaleString()}</div>
-          <div className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-            <ArrowUpRight className="w-2.5 h-2.5" />
-            {metrics.appointments_growth} vs last week
-          </div>
-        </div>
-
-        <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200">
-          <div className="text-slate-500 text-xs font-medium flex items-center justify-between">
-            <span>Conversion Rate</span>
-            <Percent className="w-3.5 h-3.5 text-emerald-600" />
-          </div>
-          <div className="text-xl font-bold text-slate-900 mt-1">{metrics.conversion_rate}</div>
-          <div className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-            <ArrowUpRight className="w-2.5 h-2.5" />
-            {metrics.conversion_growth} vs last week
+          <div className="flex items-center gap-3">
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 shadow-2xs font-semibold focus:outline-none"
+            >
+              <option value="Last 7 Days">Last 7 Days</option>
+              <option value="Last 30 Days">Last 30 Days</option>
+              <option value="This Quarter">This Quarter</option>
+              <option value="Year to Date">Year to Date</option>
+            </select>
+            <Button variant="secondary" size="sm" icon={Download} onClick={handleExport}>
+              Export Report
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Two Analytical Charts: Line Chart vs Donut Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Conversations vs Leads Line Chart */}
-        <div className="lg:col-span-7 bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-xs font-bold text-slate-900">Conversations vs Leads</h4>
-            <div className="flex items-center gap-3 text-[11px]">
-              <span className="flex items-center gap-1 text-slate-600">
-                <span className="w-2 h-2 rounded-full bg-[#1677FF]"></span>
-                Conversations
-              </span>
-              <span className="flex items-center gap-1 text-slate-600">
-                <span className="w-2 h-2 rounded-full bg-[#10C8C8]"></span>
-                Leads
-              </span>
+      {/* 5 Core Metric Cards matching Page 11 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {[
+          { label: "Total Conversations", value: data.totalConversations, change: "+14.2%", isPositive: true, icon: MessageSquare },
+          { label: "AI Resolution Rate", value: data.resolutionRate, change: "+3.1%", isPositive: true, icon: CheckCircle2 },
+          { label: "Avg Response Time", value: data.avgResponseTime, change: "-0.4s", isPositive: true, icon: Clock },
+          { label: "Appointments Booked", value: data.appointments, change: "+24%", isPositive: true, icon: CalendarIcon },
+          { label: "Sales Conversions", value: data.salesConversions, change: "+2.5%", isPositive: true, icon: Target }
+        ].map((m, i) => {
+          const Icon = m.icon;
+          return (
+            <Card key={i} className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-medium">{m.label}</span>
+                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <div className="text-xl font-bold text-slate-900">{m.value}</div>
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600">
+                <span>{m.change}</span>
+                <span className="text-slate-400 font-normal">vs last period</span>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Charts Section matching Page 11 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Conversations Over Time Chart */}
+        <Card className="p-5 space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Conversations Over Time</h3>
+              <p className="text-xs text-slate-500">Daily message volume handled autonomously</p>
             </div>
+            <StatusBadge variant="active" label="99.4% Automated" />
           </div>
 
-          <div className="h-48 w-full pt-2">
-            <svg className="w-full h-full overflow-visible" viewBox="0 0 500 160" preserveAspectRatio="none">
-              <polyline
-                fill="none"
-                stroke="#1677FF"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points="0,90 70,80 140,50 210,65 280,30 350,45 420,25 500,15"
+          <div className="h-56 w-full flex items-end">
+            <svg viewBox="0 0 500 160" className="w-full h-full overflow-visible">
+              <defs>
+                <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+              {/* Grid lines */}
+              <line x1="0" y1="40" x2="500" y2="40" stroke="#f1f5f9" strokeWidth="1" />
+              <line x1="0" y1="80" x2="500" y2="80" stroke="#f1f5f9" strokeWidth="1" />
+              <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" strokeWidth="1" />
+
+              {/* Area */}
+              <path
+                d="M 0,130 C 50,110 100,125 150,90 C 200,60 250,75 300,50 C 350,30 400,45 450,20 L 500,15 L 500,160 L 0,160 Z"
+                fill="url(#volGrad)"
               />
-              <polyline
+              {/* Curve */}
+              <path
+                d="M 0,130 C 50,110 100,125 150,90 C 200,60 250,75 300,50 C 350,30 400,45 450,20 L 500,15"
                 fill="none"
-                stroke="#10C8C8"
+                stroke="#2563eb"
                 strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points="0,135 70,130 140,115 210,120 280,105 350,115 420,100 500,95"
               />
             </svg>
+          </div>
+          <div className="flex justify-between text-[11px] text-slate-400 font-mono pt-1">
+            <span>Apr 1</span>
+            <span>Apr 8</span>
+            <span>Apr 15</span>
+            <span>Apr 22</span>
+            <span>Today</span>
+          </div>
+        </Card>
 
-            <div className="flex justify-between text-[9px] text-slate-400 mt-1">
-              {trend.slice(0, 6).map((d: any) => (
-                <span key={d.day}>{d.day}</span>
-              ))}
+        {/* Agent Performance Breakdown */}
+        <Card className="p-5 space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Agent Performance Breakdown</h3>
+              <p className="text-xs text-slate-500">Resolution and CSAT by agent specialty</p>
             </div>
           </div>
-        </div>
 
-        {/* Lead Sources Donut Chart */}
-        <div className="lg:col-span-5 bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold text-slate-900">Lead Sources</h4>
-            <span className="text-[10px] text-slate-400">Total: {metrics.leads} Leads</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-4 py-2">
-            {/* SVG Donut */}
-            <div className="relative w-28 h-28 shrink-0">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                <path
-                  className="text-slate-100"
-                  strokeWidth="3.8"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
-                  stroke="#1677FF"
-                  strokeDasharray="45, 100"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
-                  stroke="#10C8C8"
-                  strokeDasharray="25, 100"
-                  strokeDashoffset="-45"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
-                  stroke="#8B5CF6"
-                  strokeDasharray="18, 100"
-                  strokeDashoffset="-70"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xs font-bold text-slate-900 leading-none">{metrics.leads}</span>
-                <span className="text-[9px] text-slate-400">Total</span>
-              </div>
-            </div>
-
-            {/* Legend Breakdown */}
-            <div className="space-y-1 text-[11px] min-w-[130px]">
-              {sources.map((s: any) => (
-                <div key={s.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }}></span>
-                    <span className="text-slate-700">{s.name}</span>
+          <div className="space-y-4 pt-2">
+            {[
+              { name: "Support Agent", volume: "1,420 conversations", resolution: "94%", color: "bg-blue-600" },
+              { name: "Sales Agent", volume: "912 leads qualified", resolution: "88%", color: "bg-emerald-600" },
+              { name: "Appointment Agent", volume: "515 bookings managed", resolution: "96%", color: "bg-purple-600" }
+            ].map((agent, i) => (
+              <div key={i} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">{agent.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-400 text-[11px]">{agent.volume}</span>
+                    <span className="font-bold text-slate-900">{agent.resolution}</span>
                   </div>
-                  <span className="font-bold text-slate-900">{s.pct}%</span>
                 </div>
-              ))}
-            </div>
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${agent.color} rounded-full`}
+                    style={{ width: agent.resolution }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

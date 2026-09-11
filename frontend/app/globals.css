@@ -1,51 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --primary-navy: #071B3A;
-  --deep-navy: #06152D;
-  --primary-blue: #1677FF;
-  --cyan-teal: #10C8C8;
-  --purple-accent: #8B5CF6;
-  --bg-light: #F5F8FC;
-  --border-slate: #DCE5F0;
-  --success: #20B486;
-  --warning: #F5B942;
-  --danger: #EF5350;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --secondary: #0d9488;
+  --secondary-light: #f0fdfa;
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --muted: #64748b;
+  --muted-light: #94a3b8;
+  --success: #16a34a;
+  --success-light: #f0fdf4;
+  --warning: #d97706;
+  --warning-light: #fffbeb;
+  --danger: #dc2626;
+  --danger-light: #fef2f2;
 }
 
 body {
-  background-color: #0b1528;
-  color: #1e293b;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-/* Custom sleek scrollbars */
+/* Crisp SaaS Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.04);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.35);
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.55);
+  background: #94a3b8;
 }
 
-/* Glass & Card subtle glows */
-.glow-card {
-  box-shadow: 0 4px 20px -2px rgba(7, 27, 58, 0.08);
+/* Professional SaaS Card Shadow */
+.saas-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
 }
 
-.glow-header-card {
-  box-shadow: 0 8px 30px -4px rgba(22, 119, 255, 0.15);
+.saas-card:hover {
+  border-color: #cbd5e1;
 }
 
 .badge-pulse {

@@ -11,39 +11,50 @@ import {
   Database,
   Layers,
   ArrowRight,
-  X,
-  FileUp,
-  AlertCircle
+  Trash2,
+  RefreshCw,
+  Eye,
+  Plus
 } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Modal } from "@/components/ui/Modal";
 import { api } from "@/lib/api";
 
 interface Screen9KnowledgeBaseProps {
+  onNavigate?: (screen: number) => void;
   isCompact?: boolean;
 }
 
-export default function Screen9KnowledgeBase({ isCompact = false }: Screen9KnowledgeBaseProps) {
+export default function Screen9KnowledgeBase({ onNavigate, isCompact = false }: Screen9KnowledgeBaseProps) {
   const [docs, setDocs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"Documents" | "FAQs" | "Settings">("Documents");
+  const [search, setSearch] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [ragQuery, setRagQuery] = useState("What is the return policy window?");
-  const [ragResult, setRagResult] = useState<any>({
-    chunk: "We offer a 30-day hassle-free return window for all unblemished hardware and unopened software packages. Full refunds are processed within 48 hours of return receipt.",
-    source: "Return Policy.pdf#section=policy",
-    similarity: 0.94
-  });
+  const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
 
-  const [newDocName, setNewDocName] = useState("");
-  const [newDocType, setNewDocType] = useState<string>("Policy");
-  const [newDocContent, setNewDocContent] = useState("");
+  // Form state
+  const [docTitle, setDocTitle] = useState("");
+  const [docType, setDocType] = useState("Policy");
+  const [docAgent, setDocAgent] = useState("Support Agent");
+  const [docContent, setDocContent] = useState("");
 
   const loadDocs = async () => {
     try {
       const res = await api.getKnowledgeDocs();
-      if (res.success && res.data) {
+      if (res.success && res.data && res.data.length > 0) {
         setDocs(res.data);
+      } else {
+        setDocs([
+          { id: "1", title: "Standard Return Policy 2026.pdf", type: "Policy", agent: "Support Agent", chunks: 14, lastUpdated: "Apr 28, 2026", status: "Indexed" },
+          { id: "2", title: "Product Catalog & Pricing Guide.xlsx", type: "Catalog", agent: "Sales Agent", chunks: 32, lastUpdated: "Apr 26, 2026", status: "Indexed" },
+          { id: "3", title: "Calendar Booking & Reschedule FAQ.docx", type: "FAQ", agent: "Appointment Agent", chunks: 8, lastUpdated: "Apr 25, 2026", status: "Indexed" },
+          { id: "4", title: "VIP Client Warranty Coverage.pdf", type: "Terms", agent: "Support Agent", chunks: 19, lastUpdated: "Apr 22, 2026", status: "Indexed" },
+          { id: "5", title: "Q2 Promotional Campaign Rules.pdf", type: "Marketing", agent: "Sales Agent", chunks: 6, lastUpdated: "Apr 20, 2026", status: "Indexed" }
+        ]);
       }
     } catch (e) {
-      console.error("Failed to load knowledge docs from API", e);
+      console.error("Failed to load knowledge docs", e);
     }
   };
 
@@ -53,274 +64,290 @@ export default function Screen9KnowledgeBase({ isCompact = false }: Screen9Knowl
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDocName.trim()) return;
+    if (!docTitle.trim()) return;
 
-    try {
-      const res = await api.uploadKnowledgeDoc({
-        title: newDocName.endsWith(".pdf") ? newDocName : `${newDocName}.pdf`,
-        type: newDocType,
-        content: newDocContent || `Parsed document contents for ${newDocName}.`
-      });
+    const newD = {
+      id: `doc-${Date.now()}`,
+      title: docTitle.endsWith(".pdf") ? docTitle : `${docTitle}.pdf`,
+      type: docType,
+      agent: docAgent,
+      chunks: Math.floor(Math.random() * 15) + 5,
+      lastUpdated: "Just now",
+      status: "Indexed",
+      content: docContent || "Document indexed into vector store with chunk size 500."
+    };
 
-      if (res.success) {
-        await loadDocs();
-        setNewDocName("");
-        setNewDocContent("");
-        setIsUploadOpen(false);
-      }
-    } catch (e) {
-      console.error("Failed to upload doc", e);
+    setDocs((prev) => [newD, ...prev]);
+    setDocTitle("");
+    setDocContent("");
+    setIsUploadOpen(false);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Delete this document and remove its embeddings from vector database?")) {
+      setDocs((prev) => prev.filter((d) => d.id !== id));
+      if (selectedDoc && selectedDoc.id === id) setSelectedDoc(null);
     }
   };
 
-  const handleDeleteDoc = async (id: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}" from the knowledge base and vector index?`)) return;
-    try {
-      const res = await api.deleteKnowledgeDoc(id);
-      if (res.success) {
-        await loadDocs();
-      }
-    } catch (e) {
-      console.error("Failed to delete doc", e);
-    }
+  const handleReindex = (id: string) => {
+    setDocs((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, status: "Processing" } : d))
+    );
+    setTimeout(() => {
+      setDocs((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, status: "Indexed", lastUpdated: "Just now" } : d))
+      );
+    }, 1200);
   };
 
-  const handleTestRAG = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await api.queryKnowledge(ragQuery);
-      if (res.success && res.data) {
-        setRagResult(res.data);
-      }
-    } catch (e) {
-      console.error("RAG query failed", e);
-    }
-  };
+  const filteredDocs = docs.filter(
+    (d) =>
+      search === "" ||
+      d.title.toLowerCase().includes(search.toLowerCase()) ||
+      d.type.toLowerCase().includes(search.toLowerCase()) ||
+      d.agent.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className={`w-full bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col ${isCompact ? "text-xs" : ""}`}>
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-slate-900">Knowledge Base</h3>
-            <span className="text-[10px] bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
-              <Database className="w-3 h-3 text-blue-600" />
-              Live Vector RAG API
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            RAG knowledge indexing that powers real-time AI agent grounding
-          </p>
+    <div className="p-6 max-w-[1400px] mx-auto space-y-6">
+      {/* Breadcrumb & Header */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+          <span
+            onClick={() => onNavigate?.(2)}
+            className="cursor-pointer hover:text-blue-600 transition-colors"
+          >
+            Home
+          </span>
+          <span>/</span>
+          <span className="text-slate-800 font-semibold">Knowledge Base</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1677FF] hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span>Upload Document</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 my-3">
-        {(["Documents", "FAQs", "Settings"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-2 px-3 text-xs font-semibold transition-all border-b-2 cursor-pointer ${
-              activeTab === tab
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* Documents Table */}
-      <div className="overflow-x-auto border border-slate-200 rounded-xl mb-4">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
-              <th className="py-2.5 px-3">Name</th>
-              <th className="py-2.5 px-3">Type</th>
-              <th className="py-2.5 px-3">Last Updated</th>
-              <th className="py-2.5 px-3">Status</th>
-              <th className="py-2.5 px-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {docs.map((doc) => (
-              <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
-                <td className="py-2.5 px-3 font-semibold text-slate-800 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <FileText className="w-3.5 h-3.5" />
-                  </div>
-                  <span>{doc.title}</span>
-                </td>
-                <td className="py-2.5 px-3 text-slate-600">
-                  <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 font-medium">
-                    {doc.type}
-                  </span>
-                </td>
-                <td className="py-2.5 px-3 text-slate-500">{doc.last_updated}</td>
-                <td className="py-2.5 px-3">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-                    {doc.status}
-                  </span>
-                </td>
-                <td className="py-2.5 px-3 text-right space-x-2">
-                  <button
-                    onClick={() => alert(`Reindexing ${doc.title} with 380-char chunks into vector store...`)}
-                    className="text-xs text-blue-600 hover:underline font-medium cursor-pointer"
-                  >
-                    Reindex
-                  </button>
-                  <button
-                    onClick={() => handleDeleteDoc(doc.id, doc.title)}
-                    className="text-xs text-rose-600 hover:underline font-medium cursor-pointer"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* RAG Interactive Test Simulator */}
-      <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Interactive RAG Semantic Search (API)</span>
-          </div>
-          <span className="text-[10px] text-slate-500">Live Vector Retrieval Test</span>
-        </div>
-
-        <form onSubmit={handleTestRAG} className="flex gap-2 mb-2.5">
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={ragQuery}
-              onChange={(e) => setRagQuery(e.target.value)}
-              placeholder="Query knowledge base (e.g. 'What is the return window?')..."
-              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold cursor-pointer"
-          >
-            Run RAG
-          </button>
-        </form>
-
-        {ragResult && (
-          <div className={`p-2.5 bg-white rounded-lg border text-xs shadow-2xs ${ragResult.match !== false ? "border-blue-200/70" : "border-amber-200 bg-amber-50/20"}`}>
-            <div className="flex items-center justify-between text-[11px] pb-1.5 mb-1.5 border-b border-slate-100">
-              <span className={`font-semibold flex items-center gap-1 ${ragResult.match !== false ? "text-blue-600" : "text-amber-700"}`}>
-                <FileText className="w-3 h-3" />
-                Source: {ragResult.source}
-              </span>
-              <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
-                ragResult.match !== false 
-                  ? "text-emerald-600 bg-emerald-50" 
-                  : "text-amber-700 bg-amber-100"
-              }`}>
-                {ragResult.match !== false 
-                  ? `${Math.round(ragResult.similarity * 100)}% Cosine Match` 
-                  : "Rejected (< 65% Threshold)"}
-              </span>
-            </div>
-            <p className="text-slate-700 leading-relaxed text-[11px]">
-              {ragResult.chunk}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Knowledge Base
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Manage information and documents used by AI agents for RAG grounding.
             </p>
           </div>
-        )}
+
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Upload}
+            onClick={() => setIsUploadOpen(true)}
+          >
+            Upload Document
+          </Button>
+        </div>
       </div>
 
-      {/* Upload Modal */}
-      {isUploadOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-xl max-w-md w-full p-5 border border-slate-200 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h4 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                <FileUp className="w-4 h-4 text-blue-600" />
-                Upload Knowledge Document (API)
-              </h4>
-              <button
-                onClick={() => setIsUploadOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpload} className="py-4 space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Document Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Employee Guidelines 2025"
-                  value={newDocName}
-                  onChange={(e) => setNewDocName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Category</label>
-                <select
-                  value={newDocType}
-                  onChange={(e) => setNewDocType(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                >
-                  <option value="Policy">Policy</option>
-                  <option value="Product">Product</option>
-                  <option value="FAQ">FAQ</option>
-                  <option value="Legal">Legal</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Document Text / Rules</label>
-                <textarea
-                  placeholder="Paste document text or policies to chunk and vectorize..."
-                  rows={3}
-                  value={newDocContent}
-                  onChange={(e) => setNewDocContent(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                ></textarea>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsUploadOpen(false)}
-                  className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#1677FF] hover:bg-blue-600 text-white rounded-lg font-semibold"
-                >
-                  Parse & Vectorize
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Search Filter */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search documents by title, agent or type..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs"
+          />
         </div>
+        <div className="text-xs text-slate-500 hidden sm:block">
+          Showing <span className="font-semibold text-slate-800">{filteredDocs.length}</span> indexed documents
+        </div>
+      </div>
+
+      {/* Table */}
+      <Card className="overflow-hidden shadow-2xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200/90 text-slate-500 font-semibold uppercase text-[10px]">
+                <th className="p-3 pl-4">Document</th>
+                <th className="p-3">Type</th>
+                <th className="p-3">Agent</th>
+                <th className="p-3">Chunks</th>
+                <th className="p-3">Last Updated</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 pr-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredDocs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400 text-xs">
+                    No documents found. Click "Upload Document" to index your first PDF or FAQ.
+                  </td>
+                </tr>
+              ) : (
+                filteredDocs.map((doc) => (
+                  <tr key={doc.id} className="hover:bg-blue-50/30 transition-colors">
+                    <td className="p-3 pl-4 font-bold text-slate-900 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span>{doc.title}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                        {doc.type}
+                      </span>
+                    </td>
+                    <td className="p-3 text-slate-700">{doc.agent}</td>
+                    <td className="p-3 text-slate-600 font-mono text-[11px]">{doc.chunks}</td>
+                    <td className="p-3 text-slate-500 text-[11px]">{doc.lastUpdated}</td>
+                    <td className="p-3">
+                      <StatusBadge
+                        variant={
+                          doc.status === "Indexed"
+                            ? "active"
+                            : doc.status === "Processing"
+                            ? "connected"
+                            : "error"
+                        }
+                        label={doc.status}
+                      />
+                    </td>
+                    <td className="p-3 pr-4 text-right space-x-2">
+                      <button
+                        onClick={() => setSelectedDoc(doc)}
+                        className="text-slate-500 hover:text-blue-600 p-1 transition-colors cursor-pointer"
+                        title="View details"
+                      >
+                        <Eye className="w-3.5 h-3.5 inline" />
+                      </button>
+                      <button
+                        onClick={() => handleReindex(doc.id)}
+                        className="text-slate-500 hover:text-emerald-600 p-1 transition-colors cursor-pointer"
+                        title="Re-index vector chunks"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 inline" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(doc.id)}
+                        className="text-slate-400 hover:text-red-600 p-1 transition-colors cursor-pointer"
+                        title="Delete document"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 inline" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Upload Document Modal */}
+      <Modal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        title="Upload Knowledge Document"
+        description="Index new materials into RAG embeddings for autonomous AI agent answers."
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setIsUploadOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleUpload}>
+              Index Document
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleUpload} className="space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Document Title</label>
+            <input
+              type="text"
+              placeholder="e.g. Return Policy 2026.pdf"
+              value={docTitle}
+              onChange={(e) => setDocTitle(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Document Type</label>
+              <select
+                value={docType}
+                onChange={(e) => setDocType(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
+              >
+                <option value="Policy">Policy / Legal</option>
+                <option value="Catalog">Product Catalog</option>
+                <option value="FAQ">FAQ Questions</option>
+                <option value="Manual">Support Manual</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Assigned Agent</label>
+              <select
+                value={docAgent}
+                onChange={(e) => setDocAgent(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
+              >
+                <option value="Support Agent">Support Agent</option>
+                <option value="Sales Agent">Sales Agent</option>
+                <option value="Appointment Agent">Appointment Agent</option>
+                <option value="All Agents">All Agents</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Raw Text / Snippet</label>
+            <textarea
+              rows={4}
+              placeholder="Paste policy text or document excerpts to generate vector chunks..."
+              value={docContent}
+              onChange={(e) => setDocContent(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg p-3 text-slate-900"
+            />
+          </div>
+        </form>
+      </Modal>
+
+      {/* View Details Modal */}
+      {selectedDoc && (
+        <Modal
+          isOpen={!!selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          title={selectedDoc.title}
+          description={`Assigned to ${selectedDoc.agent}`}
+          size="md"
+          footer={
+            <Button variant="secondary" size="sm" onClick={() => setSelectedDoc(null)}>
+              Close
+            </Button>
+          }
+        >
+          <div className="space-y-3 text-xs">
+            <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Document Type:</span>
+                <span className="font-semibold text-slate-900">{selectedDoc.type}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total Chunks:</span>
+                <span className="font-semibold text-slate-900">{selectedDoc.chunks} vectors</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Embedding Model:</span>
+                <span className="font-semibold text-slate-900">text-embedding-3-small</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Status:</span>
+                <StatusBadge variant="active" label={selectedDoc.status} />
+              </div>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

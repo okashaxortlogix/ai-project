@@ -1,28 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Bot,
-  Headphones,
-  TrendingUp,
-  Calendar,
-  Layers,
-  LayoutGrid,
-  ShoppingCart,
-  RotateCcw,
-  Bell,
   Search,
+  Bell,
+  CheckCircle2,
+  Sliders,
+  LogOut,
+  User,
+  Settings,
+  Sparkles,
+  ExternalLink,
   ChevronDown,
-  Sparkles
+  X,
+  Radio
 } from "lucide-react";
+import Modal from "./ui/Modal";
+import Button from "./ui/Button";
+import StatusBadge from "./ui/StatusBadge";
 
 interface HeaderProps {
   viewMode: "poster" | "workspace";
   setViewMode: (mode: "poster" | "workspace") => void;
   activeScreen: number;
   setActiveScreen: (screen: number) => void;
-  cartCount: number;
-  openCart: () => void;
+  cartCount?: number;
+  openCart?: () => void;
   resetDemo: () => void;
 }
 
@@ -31,148 +35,253 @@ export default function Header({
   setViewMode,
   activeScreen,
   setActiveScreen,
-  cartCount,
+  cartCount = 0,
   openCart,
-  resetDemo,
+  resetDemo
 }: HeaderProps) {
+  const [isGhlModalOpen, setIsGhlModalOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [ghlLocationId, setGhlLocationId] = useState("loc_ghl_98314xa92");
+  const [ghlToken, setGhlToken] = useState("pit-84192401-a472-89be-01");
+  const [ghlConnected, setGhlConnected] = useState(true);
+
+  const notifications = [
+    { id: 1, title: "New appointment booked", time: "2m ago", desc: "Dental Consultation with Sarah Ahmed" },
+    { id: 2, title: "Shopify order synced", time: "12m ago", desc: "Order #12345 inventory updated in WooCommerce" },
+    { id: 3, title: "Support ticket resolved", time: "25m ago", desc: "Customer #2456 marked resolved by Support Bot" },
+    { id: 4, title: "New lead captured", time: "45m ago", desc: "Ali Raza qualified with score 88%" }
+  ];
+
+  const handleSaveGhl = (e: React.FormEvent) => {
+    e.preventDefault();
+    setGhlConnected(true);
+    setIsGhlModalOpen(false);
+  };
+
   return (
-    <header className="w-full bg-[#061226]/95 backdrop-blur-md text-white border-b border-slate-800/80 sticky top-0 z-50 shadow-md">
-      <div className="max-w-[1920px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
-        
-        {/* Left: Brand Identity & Org Badge */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div 
-            onClick={() => { setActiveScreen(2); setViewMode("workspace"); }}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#1677FF] via-[#10C8C8] to-[#8B5CF6] flex items-center justify-center shadow-md shadow-blue-500/20 ring-1 ring-white/20 transition-transform group-hover:scale-105">
-              <Bot className="w-5 h-5 text-white" />
+    <>
+      <header className="w-full bg-white border-b border-slate-200/90 sticky top-0 z-40 shadow-2xs">
+        <div className="w-full px-4 lg:px-6 h-14 flex items-center justify-between gap-4">
+          {/* Left: Search Bar */}
+          <div className="flex-1 max-w-md relative">
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search anything..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-xs text-slate-800 placeholder-slate-400 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">
-                  AI Conversation & Sales Suite
-                </h1>
-                <span className="hidden sm:inline-flex text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  Enterprise
-                </span>
-              </div>
-              <p className="hidden md:block text-[11px] text-slate-400">
-                Turn Conversations into Customers — 24/7
+          </div>
+
+          {/* Right: Controls, GHL Status, Notifications, User */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            {/* Quick AI Assistant Button */}
+            <button
+              onClick={() => setActiveScreen(10)}
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg border border-blue-200 transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Assistant</span>
+            </button>
+
+            {/* GHL Connection Status Pill */}
+            <button
+              onClick={() => setIsGhlModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold transition-colors cursor-pointer"
+              title="Click to manage GoHighLevel connection"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 badge-pulse" />
+              <span>GHL Connected</span>
+            </button>
+
+            {/* Notifications Bell */}
+            <div className="relative">
+              <button
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                title="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+              </button>
+
+              {/* Notifications Dropdown */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-2 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-900">Notifications</span>
+                    <span className="text-[10px] text-blue-600 font-semibold cursor-pointer hover:underline">
+                      Mark all read
+                    </span>
+                  </div>
+                  <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {notifications.map((n) => (
+                      <div key={n.id} className="p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-slate-800">{n.title}</p>
+                          <span className="text-[10px] text-slate-400">{n.time}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{n.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* User Profile Pill */}
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 pl-2 pr-2.5 py-1 hover:bg-slate-100/80 rounded-lg transition-colors cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold ring-1 ring-slate-200">
+                  O
+                </div>
+                <div className="text-left hidden sm:block">
+                  <div className="text-xs font-bold text-slate-800 leading-tight">Okasha</div>
+                  <div className="text-[10px] text-slate-500 leading-none">Administrator</div>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {/* User Menu Dropdown */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-1 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-2 border-b border-slate-100">
+                    <p className="text-xs font-bold text-slate-900">Muhammad Okasha</p>
+                    <p className="text-[10px] text-slate-500">okasha@company.com</p>
+                  </div>
+                  <div className="py-1">
+                    <button
+                      onClick={() => { setActiveScreen(12); setIsUserMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md cursor-pointer"
+                    >
+                      <Settings className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Account Settings</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveScreen(15); setIsUserMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md cursor-pointer"
+                    >
+                      <Sliders className="w-3.5 h-3.5 text-slate-400" />
+                      <span>GHL Integration</span>
+                    </button>
+                    <button
+                      onClick={() => { resetDemo(); setIsUserMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-amber-700 hover:bg-amber-50 rounded-md cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Reset State</span>
+                    </button>
+                  </div>
+                  <div className="pt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => { setActiveScreen(1); setIsUserMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-md cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* GoHighLevel Connection Modal */}
+      <Modal
+        isOpen={isGhlModalOpen}
+        onClose={() => setIsGhlModalOpen(false)}
+        title="Connect GoHighLevel"
+        subtitle="Configure your GoHighLevel sub-account or OAuth connection"
+        maxWidth="md"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => { setGhlConnected(false); setIsGhlModalOpen(false); }}
+            >
+              Disconnect
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setIsGhlModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleSaveGhl}>
+                Save & Connect
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <form onSubmit={handleSaveGhl} className="space-y-4">
+          <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-start gap-3">
+            <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-blue-900">
+              <p className="font-semibold">Sub-Account Connected</p>
+              <p className="text-blue-700 text-[11px] mt-0.5">
+                Location sync is currently active. Conversations, calendars, and contacts are flowing seamlessly.
               </p>
             </div>
           </div>
 
-          <div className="hidden xl:flex items-center gap-1.5 pl-3 border-l border-slate-800 text-xs text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="font-semibold text-slate-200">Acme Corporation</span>
-            <span className="text-[10px] text-slate-400 font-mono bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700">org-acme-1</span>
-          </div>
-        </div>
-
-        {/* Center: Real-Time Autonomous Agent Status Chips */}
-        <div className="hidden lg:flex items-center gap-2 bg-[#091834] p-1 rounded-xl border border-slate-800">
-          <button
-            onClick={() => { setActiveScreen(4); setViewMode("workspace"); }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeScreen === 4 && viewMode === "workspace"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-slate-300 hover:text-white hover:bg-slate-800/50"
-            }`}
-          >
-            <Headphones className="w-3.5 h-3.5 text-blue-400" />
-            <span>Support Agent</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-          </button>
-
-          <button
-            onClick={() => { setActiveScreen(5); setViewMode("workspace"); }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeScreen === 5 && viewMode === "workspace"
-                ? "bg-teal-600 text-white shadow-sm"
-                : "text-slate-300 hover:text-white hover:bg-slate-800/50"
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5 text-teal-400" />
-            <span>Sales Agent</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-          </button>
-
-          <button
-            onClick={() => { setActiveScreen(6); setViewMode("workspace"); }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeScreen === 6 && viewMode === "workspace"
-                ? "bg-purple-600 text-white shadow-sm"
-                : "text-slate-300 hover:text-white hover:bg-slate-800/50"
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5 text-purple-400" />
-            <span>Appointment Agent</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-          </button>
-        </div>
-
-        {/* Right Controls: Mode Toggle, Cart, User Profile */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          
-          {/* Mode Switcher */}
-          <div className="flex items-center bg-[#091834] p-1 rounded-lg border border-slate-800 text-xs">
-            <button
-              onClick={() => setViewMode("workspace")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer ${
-                viewMode === "workspace"
-                  ? "bg-[#1677FF] text-white shadow-xs"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              title="Full interactive application view"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Web App</span>
-            </button>
-            <button
-              onClick={() => setViewMode("poster")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer ${
-                viewMode === "poster"
-                  ? "bg-[#1677FF] text-white shadow-xs"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              title="View all 13 screens simultaneously as an overview canvas"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Overview Canvas</span>
-            </button>
-          </div>
-
-          {/* Cart Trigger */}
-          <button
-            onClick={openCart}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 transition-all font-medium text-xs cursor-pointer shadow-xs"
-          >
-            <ShoppingCart className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Cart</span>
-            {cartCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-emerald-500 text-[#051124] text-[10px] font-bold flex items-center justify-center ml-0.5">
-                {cartCount}
-              </span>
-            )}
-          </button>
-
-          {/* User Profile */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-            <img
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80"
-              alt="Alex Morgan"
-              className="w-8 h-8 rounded-full ring-1 ring-slate-700 object-cover"
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              GHL Location ID
+            </label>
+            <input
+              type="text"
+              value={ghlLocationId}
+              onChange={(e) => setGhlLocationId(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+              placeholder="e.g. loc_ghl_98314xa92"
             />
-            <div className="hidden xl:block text-left">
-              <div className="text-xs font-semibold text-white leading-tight">Alex Morgan</div>
-              <div className="text-[10px] text-slate-400 leading-tight">Admin • Operations</div>
-            </div>
           </div>
 
-        </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Private Integration Token / API Key
+            </label>
+            <input
+              type="password"
+              value={ghlToken}
+              onChange={(e) => setGhlToken(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+              placeholder="pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            />
+          </div>
 
-      </div>
-    </header>
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>OAuth 2.0 Alternative:</span>
+            <a
+              href="https://marketplace.gohighlevel.com"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:underline"
+            >
+              <span>Connect with Marketplace</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }

@@ -125,10 +125,10 @@
       "organization_id": "org-acme-1",
       "customer_id": "cust-1",
       "channel": "web",
-      "status": "active",
-      "assigned_agent": "sales",
-      "last_message": "Here are the top options that match your needs:\n\n1. MacBook Air M1 — $799 (Up to 18 hours battery, lightweight & powerful)\n2. Dell Inspiron 15 — $749 (10 hours battery, Intel Core i7, great value for money)\n\nWould you like me to add either of these to your cart or book a call with our specialist?",
-      "last_message_at": "07:56 PM",
+      "status": "waiting_for_human",
+      "assigned_agent": "support",
+      "last_message": "Conversation handed off to human support queue.",
+      "last_message_at": "08:52 PM",
       "created_at": "2026-09-10T21:42:40.477Z"
     },
     {
@@ -832,6 +832,88 @@
       "metadata": {},
       "id": "m-1789138605041",
       "timestamp": "07:56 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "can i get a discount",
+      "id": "m-1789141857421",
+      "timestamp": "08:50 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "sales",
+      "content": "We offer a 20% discount on all annual billing plans! Would you like me to apply this promo code to your current checkout?",
+      "metadata": {
+        "toolExecuted": {
+          "toolName": "get_products",
+          "result": [
+            {
+              "id": "macbook-air-m1",
+              "name": "MacBook Air M1",
+              "price": 799,
+              "battery": "18 hours",
+              "desc": "Lightweight & powerful for work and creative multitasking"
+            },
+            {
+              "id": "dell-inspiron-15",
+              "name": "Dell Inspiron 15",
+              "price": 749,
+              "battery": "10 hours",
+              "desc": "Intel Core i7, brilliant 15.6 inch display and great value"
+            }
+          ]
+        }
+      },
+      "id": "m-1789141857428",
+      "timestamp": "08:50 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "i am buying multiple items, wont it increase for multiple items",
+      "id": "m-1789141889958",
+      "timestamp": "08:51 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "support",
+      "content": "I'm here to help with any orders, shipping questions, or return requests. Could you provide your order number or specific question?",
+      "metadata": {},
+      "id": "m-1789141889963",
+      "timestamp": "08:51 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "customer",
+      "content": "i am buying 7 laptops, 15 macbooks",
+      "id": "m-1789141911750",
+      "timestamp": "08:51 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "agent",
+      "agent_type": "support",
+      "content": "I'm here to help with any orders, shipping questions, or return requests. Could you provide your order number or specific question?",
+      "metadata": {},
+      "id": "m-1789141911755",
+      "timestamp": "08:51 PM"
+    },
+    {
+      "organization_id": "org-acme-1",
+      "conversation_id": "conv-1",
+      "sender": "system",
+      "content": "Conversation handed off to human support queue.",
+      "id": "m-1789141962399",
+      "timestamp": "08:52 PM"
     }
   ],
   "leads": [

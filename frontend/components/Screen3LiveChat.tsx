@@ -3,17 +3,22 @@
 import React, { useState, useEffect } from "react";
 import {
   Search,
-  Phone,
-  Info,
-  MoreVertical,
-  CheckCircle,
+  Plus,
   Send,
-  Paperclip,
-  Smile,
-  Bot,
   User,
-  CheckCheck
+  Bot,
+  ExternalLink,
+  Clock,
+  CheckCircle2,
+  Paperclip,
+  Mic,
+  MessageSquare,
+  Package,
+  Calendar
 } from "lucide-react";
+import Modal from "./ui/Modal";
+import Button from "./ui/Button";
+import StatusBadge from "./ui/StatusBadge";
 import { api } from "@/lib/api";
 
 interface Screen3LiveChatProps {
@@ -21,370 +26,556 @@ interface Screen3LiveChatProps {
   isCompact?: boolean;
 }
 
-export default function Screen3LiveChat({ onNavigate, isCompact = false }: Screen3LiveChatProps) {
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [activeId, setActiveId] = useState<string>("conv-1");
-  const [filter, setFilter] = useState<"all" | "active" | "pending">("all");
+export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
+  const [activeTab, setActiveTab] = useState<"all" | "support" | "sales" | "appointment">("all");
+  const [selectedId, setSelectedId] = useState<string>("conv-1");
   const [searchQuery, setSearchQuery] = useState("");
-  const [inputText, setInputText] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isFullChatModalOpen, setIsFullChatModalOpen] = useState(false);
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
 
-  // Load live conversations from API
-  const loadConversations = async () => {
-    try {
-      const res = await api.getConversations(filter, searchQuery);
-      if (res.success && res.data) {
-        setConversations(res.data);
-        if (!activeId && res.data.length > 0) {
-          setActiveId(res.data[0].id);
-        }
+  // New Chat Form
+  const [newChatName, setNewChatName] = useState("");
+  const [newChatEmail, setNewChatEmail] = useState("");
+  const [newChatAgent, setNewChatAgent] = useState("support");
+  const [newChatMessage, setNewChatMessage] = useState("");
+
+  const [conversationList, setConversationList] = useState([
+    {
+      id: "conv-1",
+      customer: "Sarah Ahmed",
+      email: "sarah@gmail.com",
+      message: "I want to book an appointment for a cleaning.",
+      agent: "appointment",
+      agentLabel: "Appointment",
+      time: "10:34 AM",
+      status: "active",
+      transcript: [
+        { sender: "customer", text: "I want to book an appointment for a cleaning.", time: "10:24 AM" },
+        { sender: "agent", text: "Sure! I can help you with that. Let me check available slots for you.", time: "10:24 AM" },
+        { sender: "agent", text: "We have tomorrow at 11:30 AM and Thursday at 2:00 PM open. Which works better for you?", time: "10:25 AM" }
+      ],
+      orderContext: null
+    },
+    {
+      id: "conv-2",
+      customer: "Ali Raza",
+      email: "ali.raza@outlook.com",
+      message: "Can you tell me about your pricing?",
+      agent: "sales",
+      agentLabel: "Sales",
+      time: "09:58 AM",
+      status: "active",
+      transcript: [
+        { sender: "customer", text: "Can you tell me about your pricing?", time: "09:58 AM" },
+        { sender: "agent", text: "Our plans start at $49/mo for Starter and $149/mo for Growth with full AI agent automation. Would you like me to share a 15% discount code?", time: "09:58 AM" }
+      ],
+      orderContext: null
+    },
+    {
+      id: "conv-3",
+      customer: "Fatima Khan",
+      email: "fatima.khan@gmail.com",
+      message: "My order hasn't arrived yet.",
+      agent: "support",
+      agentLabel: "Support",
+      time: "09:42 AM",
+      status: "active",
+      transcript: [
+        { sender: "customer", text: "My order hasn't arrived yet.", time: "09:40 AM" },
+        { sender: "agent", text: "I found your order #12345 in Shopify. It's currently Out for Delivery via DHL Express.", time: "09:41 AM" }
+      ],
+      orderContext: {
+        orderNumber: "#12345",
+        status: "Out for Delivery",
+        estimated: "Today by 4:00 PM",
+        carrier: "DHL Express (Tracking: DHL-9402-US)"
       }
-    } catch (e) {
-      console.error("Failed to load conversations from API", e);
-    } finally {
-      setLoading(false);
+    },
+    {
+      id: "conv-4",
+      customer: "Usman Tariq",
+      email: "usman.tariq@yahoo.com",
+      message: "Do you have any special discounts?",
+      agent: "sales",
+      agentLabel: "Sales",
+      time: "09:17 AM",
+      status: "active",
+      transcript: [
+        { sender: "customer", text: "Do you have any special discounts?", time: "09:15 AM" },
+        { sender: "agent", text: "Yes! Use promo code SPRING20 at checkout for 20% off all catalog items.", time: "09:16 AM" }
+      ],
+      orderContext: null
+    },
+    {
+      id: "conv-5",
+      customer: "Ayesha Malik",
+      email: "ayesha.m@gmail.com",
+      message: "I need help with my account setup",
+      agent: "support",
+      agentLabel: "Support",
+      time: "08:50 AM",
+      status: "active",
+      transcript: [
+        { sender: "customer", text: "I need help with my account setup", time: "08:48 AM" },
+        { sender: "agent", text: "I can guide you through the 3-step setup wizard or invite your team members. Which step are you on?", time: "08:49 AM" }
+      ],
+      orderContext: null
+    },
+    {
+      id: "conv-6",
+      customer: "Hamza Ali",
+      email: "hamza.ali@corp.io",
+      message: "Can I reschedule my appointment?",
+      agent: "appointment",
+      agentLabel: "Appointment",
+      time: "08:32 AM",
+      status: "active",
+      transcript: [
+        { sender: "customer", text: "Can I reschedule my appointment?", time: "08:30 AM" },
+        { sender: "agent", text: "Certainly, Hamza! Your Dental Consultation can be moved to Friday at 3:00 PM. Should I confirm this slot?", time: "08:31 AM" }
+      ],
+      orderContext: null
     }
-  };
+  ]);
 
-  useEffect(() => {
-    loadConversations();
-  }, [filter, searchQuery]);
+  // Filter conversations
+  const filteredConversations = conversationList.filter((c) => {
+    const matchesTab = activeTab === "all" || c.agent === activeTab;
+    const matchesSearch =
+      searchQuery === "" ||
+      c.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.message.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch;
+  });
 
-  const currentConv = conversations.find((c) => c.id === activeId) || conversations[0];
+  const selectedConv =
+    conversationList.find((c) => c.id === selectedId) || conversationList[0];
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || !currentConv) return;
-
-    const sentText = inputText;
-    setInputText("");
-    setIsTyping(true);
-
-    // Optimistic local push
-    const optimisticMsg = {
-      id: `m-opt-${Date.now()}`,
-      sender: "customer",
-      content: sentText,
-      timestamp: "Just now"
+  const handleSendReply = () => {
+    if (!replyText.trim()) return;
+    const newMsg = {
+      sender: "agent",
+      text: replyText.trim(),
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
 
-    setConversations((prev) =>
+    setConversationList((prev) =>
       prev.map((c) =>
-        c.id === currentConv.id
-          ? {
-              ...c,
-              last_message: sentText,
-              last_message_at: "Just now",
-              messages: [...c.messages, optimisticMsg]
-            }
+        c.id === selectedConv.id
+          ? { ...c, transcript: [...c.transcript, newMsg] }
           : c
       )
     );
-
-    try {
-      // Real backend API call which routes through AI Orchestrator & writes to DB
-      const res = await api.sendMessage(currentConv.id, sentText, "customer");
-      if (res.success && res.data) {
-        // Refresh conversations to sync state
-        await loadConversations();
-      }
-    } catch (err) {
-      console.error("Error calling live message API", err);
-    } finally {
-      setIsTyping(false);
-    }
+    setReplyText("");
   };
 
-  const handleResolve = async () => {
-    if (!currentConv) return;
-    try {
-      await api.resolveConversation(currentConv.id);
-      await loadConversations();
-    } catch (e) {
-      console.error("Resolve error", e);
-    }
+  const handleCreateNewChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChatName.trim()) return;
+
+    const newConv = {
+      id: `conv-${Date.now()}`,
+      customer: newChatName.trim(),
+      email: newChatEmail.trim() || `${newChatName.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+      message: newChatMessage.trim() || "Started new session",
+      agent: newChatAgent,
+      agentLabel: newChatAgent.charAt(0).toUpperCase() + newChatAgent.slice(1),
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status: "active",
+      transcript: [
+        {
+          sender: "customer",
+          text: newChatMessage.trim() || "Hello, I need assistance.",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        },
+        {
+          sender: "agent",
+          text: `Hello ${newChatName}! I am your ${newChatAgent} AI assistant. How can I help you today?`,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        }
+      ],
+      orderContext: null
+    };
+
+    setConversationList([newConv, ...conversationList]);
+    setSelectedId(newConv.id);
+    setIsNewChatModalOpen(false);
+    setNewChatName("");
+    setNewChatEmail("");
+    setNewChatMessage("");
   };
 
-  const handleHandoff = async () => {
-    if (!currentConv) return;
-    try {
-      await api.handoffConversation(currentConv.id);
-      await loadConversations();
-      alert(`Conversation with ${currentConv.customer.name} handed off to human support queue.`);
-    } catch (e) {
-      console.error("Handoff error", e);
+  const getTagColor = (agent: string) => {
+    switch (agent) {
+      case "appointment":
+        return "bg-amber-50 text-amber-700 border-amber-200/80";
+      case "sales":
+        return "bg-teal-50 text-teal-700 border-teal-200/80";
+      case "support":
+        return "bg-blue-50 text-blue-700 border-blue-200/80";
+      default:
+        return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
 
   return (
-    <div className={`w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row h-[560px] ${isCompact ? "text-xs" : ""}`}>
-      {/* Left Sidebar - Conversation List */}
-      <div className="w-full md:w-80 border-r border-slate-200 bg-white flex flex-col shrink-0">
-        {/* Header & Filter Tabs */}
-        <div className="p-3 border-b border-slate-100">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Conversations (API)</h3>
-            <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
-              {conversations.length} Active
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg mb-2">
-            {(["all", "active", "pending"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setFilter(tab)}
-                className={`flex-1 py-1 rounded text-[11px] font-semibold capitalize transition-all cursor-pointer ${
-                  filter === tab ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Live Conversations
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            View and manage all active conversations across your AI agents.
+          </p>
         </div>
 
-        {/* Scrollable Conversation List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {conversations.map((conv) => {
-            const isSelected = conv.id === activeId;
-            return (
-              <div
-                key={conv.id}
-                onClick={() => setActiveId(conv.id)}
-                className={`p-3 flex items-start gap-3 cursor-pointer transition-all ${
-                  isSelected ? "bg-blue-50/70 border-l-3 border-blue-600" : "hover:bg-slate-50"
-                }`}
-              >
-                <div className="relative shrink-0">
-                  <img
-                    src={conv.customer.avatar}
-                    alt={conv.customer.name}
-                    className="w-9 h-9 rounded-full object-cover"
-                  />
-                  {conv.customer.online && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800 truncate">
-                      {conv.customer.name}
-                    </span>
-                    <span className="text-[10px] text-slate-400 shrink-0">{conv.last_message_at}</span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                    {conv.last_message}
-                  </p>
-
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <span
-                      className={`text-[9px] font-semibold px-1.5 py-0.5 rounded capitalize ${
-                        conv.assigned_agent === "support"
-                          ? "bg-blue-100 text-blue-700"
-                          : conv.assigned_agent === "sales"
-                          ? "bg-teal-100 text-teal-700"
-                          : conv.assigned_agent === "appointment"
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
-                    >
-                      {conv.assigned_agent} Agent
-                    </span>
-                    {conv.status === "pending" && (
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
-                        Pending
-                      </span>
-                    )}
-                    {conv.status === "waiting_for_human" && (
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">
-                        Human Queue
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 badge-pulse" />
+            <span>Live</span>
+          </span>
+          <Button
+            variant="primary"
+            size="md"
+            icon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => setIsNewChatModalOpen(true)}
+          >
+            New Chat
+          </Button>
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      {currentConv ? (
-        <div className="flex-1 flex flex-col bg-slate-50/40">
-          {/* Chat Header */}
-          <div className="p-3.5 bg-white border-b border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <img
-                  src={currentConv.customer.avatar}
-                  alt={currentConv.customer.name}
-                  className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
-                />
-                {currentConv.customer.online && (
-                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white"></span>
-                )}
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                  {currentConv.customer.name}
-                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 font-medium">
-                    {currentConv.customer.online ? "Online" : "Offline"}
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400">
-                  Assigned: <span className="text-slate-600 font-medium capitalize">{currentConv.assigned_agent} Agent (AI)</span>
-                </p>
-              </div>
-            </div>
+      {/* Filter Tabs & Search */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Filter Pills */}
+        <div className="inline-flex items-center p-1 bg-slate-100/90 rounded-xl border border-slate-200/80">
+          {[
+            { id: "all", label: "All (6)" },
+            { id: "support", label: "Support (2)" },
+            { id: "sales", label: "Sales (2)" },
+            { id: "appointment", label: "Appointment (2)" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === tab.id
+                  ? "bg-white text-slate-900 shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-            {/* Action Toolbar */}
-            <div className="flex items-center gap-1.5 text-slate-500">
-              <button
-                onClick={handleHandoff}
-                title="Handoff to human agent"
-                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
-              >
-                Handoff
-              </button>
-              <button
-                title="Call customer"
-                onClick={() => alert(`Initiating audio call with ${currentConv.customer.name}...`)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-              </button>
-              <button
-                title="Customer information"
-                onClick={() => onNavigate && onNavigate(7)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-              >
-                <Info className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleResolve}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200 transition-colors ml-1"
-              >
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>Resolve</span>
-              </button>
-            </div>
-          </div>
+        {/* Search */}
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+          />
+        </div>
+      </div>
 
-          {/* Message Thread */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5">
-            {currentConv.messages.map((msg: any) => {
-              const isCustomer = msg.sender === "customer";
+      {/* Main 2-Column Split: List + Details Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Conversation List (7 Cols) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-xl divide-y divide-slate-100 shadow-2xs overflow-hidden">
+          {filteredConversations.length === 0 ? (
+            <div className="p-8 text-center">
+              <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs font-semibold text-slate-700">No conversations found</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Try changing your search or filter tab</p>
+            </div>
+          ) : (
+            filteredConversations.map((conv) => {
+              const isSelected = selectedConv?.id === conv.id;
               return (
                 <div
-                  key={msg.id}
-                  className={`flex gap-2.5 max-w-[85%] ${
-                    isCustomer ? "ml-auto flex-row-reverse" : "mr-auto"
+                  key={conv.id}
+                  onClick={() => setSelectedId(conv.id)}
+                  className={`p-4 flex items-start justify-between gap-3 cursor-pointer transition-all ${
+                    isSelected
+                      ? "bg-blue-50/50 border-l-4 border-l-blue-600"
+                      : "hover:bg-slate-50/80"
                   }`}
                 >
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${
-                      isCustomer
-                        ? "bg-blue-600 text-white"
-                        : msg.agent_type === "sales"
-                        ? "bg-teal-600 text-white"
-                        : msg.agent_type === "appointment"
-                        ? "bg-purple-600 text-white"
-                        : "bg-[#071B3A] text-white"
-                    }`}
-                  >
-                    {isCustomer ? (
-                      <User className="w-3.5 h-3.5" />
-                    ) : (
-                      <Bot className="w-3.5 h-3.5" />
-                    )}
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      {conv.customer.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 truncate">
+                          {conv.customer}
+                        </span>
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getTagColor(
+                            conv.agent
+                          )}`}
+                        >
+                          {conv.agentLabel}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate mt-1">
+                        {conv.message}
+                      </p>
+                    </div>
                   </div>
 
-                  <div>
-                    <div
-                      className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                        isCustomer
-                          ? "bg-[#1677FF] text-white rounded-tr-xs"
-                          : "bg-white text-slate-800 border border-slate-200/90 shadow-xs rounded-tl-xs"
-                      }`}
-                    >
-                      <p className="whitespace-pre-line">{msg.content}</p>
-                    </div>
-                    <div
-                      className={`flex items-center gap-1 text-[10px] text-slate-400 mt-1 ${
-                        isCustomer ? "justify-end" : "justify-start"
-                      }`}
-                    >
-                      <span>{msg.timestamp}</span>
-                      {isCustomer && <CheckCheck className="w-3 h-3 text-blue-500" />}
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-medium text-slate-400 shrink-0">
+                    {conv.time}
+                  </span>
                 </div>
               );
-            })}
+            })
+          )}
+        </div>
 
-            {isTyping && (
-              <div className="flex items-center gap-2 text-xs text-slate-400 italic">
-                <Bot className="w-3.5 h-3.5 animate-bounce text-blue-500" />
-                <span>AI Orchestrator processing & grounding reply...</span>
+        {/* Right: Conversation Details Panel (5 Cols) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-xl p-5 shadow-2xs flex flex-col justify-between">
+          {selectedConv ? (
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Conversation Details
+                </h3>
+                <span
+                  className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${getTagColor(
+                    selectedConv.agent
+                  )}`}
+                >
+                  {selectedConv.agentLabel}
+                </span>
               </div>
-            )}
+
+              {/* Customer Profile Card */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50/80 border border-slate-100 rounded-lg">
+                <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-bold">
+                  {selectedConv.customer.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">
+                    {selectedConv.customer}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">{selectedConv.email}</p>
+                </div>
+              </div>
+
+              {/* Chat Message Snippets */}
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                {selectedConv.transcript.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex flex-col ${
+                      msg.sender === "customer" ? "items-start" : "items-end"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[85%] p-3 rounded-xl text-xs leading-relaxed ${
+                        msg.sender === "customer"
+                          ? "bg-slate-100 text-slate-800 border border-slate-200/70 rounded-tl-none"
+                          : "bg-blue-50 text-blue-900 border border-blue-100 rounded-tr-none"
+                      }`}
+                    >
+                      <div className="text-[10px] font-semibold text-slate-400 mb-0.5">
+                        {msg.sender === "customer" ? selectedConv.customer : "AI Agent"}
+                      </div>
+                      {msg.text}
+                    </div>
+                    <span className="text-[9px] text-slate-400 mt-1 px-1">
+                      {msg.time}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* If Order Context exists */}
+              {selectedConv.orderContext && (
+                <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-lg text-xs space-y-1">
+                  <div className="flex items-center justify-between font-bold text-teal-900">
+                    <span className="flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5 text-teal-600" />
+                      Order Details: {selectedConv.orderContext.orderNumber}
+                    </span>
+                    <StatusBadge status={selectedConv.orderContext.status} variant="active" pulse={false} />
+                  </div>
+                  <div className="text-[11px] text-teal-800">
+                    Estimated Delivery: {selectedConv.orderContext.estimated}
+                  </div>
+                  <div className="text-[11px] text-teal-700">
+                    Tracking: {selectedConv.orderContext.carrier}
+                  </div>
+                </div>
+              )}
+
+              {/* View Full Conversation Button */}
+              <div className="pt-3">
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => setIsFullChatModalOpen(true)}
+                >
+                  View Full Conversation
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="py-12 text-center text-slate-400 text-xs">
+              Select a conversation to view details
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Full Conversation Modal */}
+      <Modal
+        isOpen={isFullChatModalOpen}
+        onClose={() => setIsFullChatModalOpen(false)}
+        title={
+          selectedConv ? (
+            <div className="flex items-center gap-2">
+              <span>{selectedConv.customer}</span>
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getTagColor(
+                  selectedConv.agent
+                )}`}
+              >
+                {selectedConv.agentLabel}
+              </span>
+            </div>
+          ) : (
+            "Conversation"
+          )
+        }
+        subtitle={selectedConv?.email}
+        maxWidth="lg"
+      >
+        <div className="space-y-4">
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+            {selectedConv?.transcript.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex flex-col ${
+                  msg.sender === "customer" ? "items-start" : "items-end"
+                }`}
+              >
+                <div
+                  className={`max-w-[80%] p-3 rounded-xl text-xs ${
+                    msg.sender === "customer"
+                      ? "bg-slate-100 text-slate-800 border border-slate-200/80 rounded-tl-none"
+                      : "bg-blue-600 text-white rounded-tr-none shadow-xs"
+                  }`}
+                >
+                  {msg.text}
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1">{msg.time}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Message Composer */}
-          <form
-            onSubmit={handleSendMessage}
-            className="p-3 bg-white border-t border-slate-200 flex items-center gap-2"
-          >
-            <button
-              type="button"
-              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <Smile className="w-4 h-4" />
-            </button>
-
+          {/* Quick Reply Form */}
+          <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
             <input
               type="text"
-              placeholder="Type a message (e.g. 'Can I get a discount?', 'Book demo for 2 PM')..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Type your reply..."
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
+              className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
             />
-
-            <button
-              type="submit"
-              className="w-8 h-8 rounded-lg bg-[#1677FF] hover:bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm cursor-pointer transition-all"
-            >
+            <Button variant="primary" size="md" onClick={handleSendReply}>
               <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
+              <span>Send</span>
+            </Button>
+          </div>
         </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
-          Loading conversations from backend API...
-        </div>
-      )}
+      </Modal>
+
+      {/* New Chat Modal */}
+      <Modal
+        isOpen={isNewChatModalOpen}
+        onClose={() => setIsNewChatModalOpen(false)}
+        title="Start New Conversation"
+        subtitle="Initiate a direct customer interaction or simulated test session"
+        maxWidth="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button variant="secondary" size="sm" onClick={() => setIsNewChatModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleCreateNewChat}>
+              Start Conversation
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleCreateNewChat} className="space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Customer Name
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Zaid Khan"
+              value={newChatName}
+              onChange={(e) => setNewChatName(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Customer Email
+            </label>
+            <input
+              type="email"
+              placeholder="e.g. zaid.khan@example.com"
+              value={newChatEmail}
+              onChange={(e) => setNewChatEmail(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Assigned AI Agent
+            </label>
+            <select
+              value={newChatAgent}
+              onChange={(e) => setNewChatAgent(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+            >
+              <option value="support">Customer Support Agent</option>
+              <option value="sales">Sales & Recommendations Agent</option>
+              <option value="appointment">Appointment Booking Agent</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Initial Message
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Type the opening customer question or prompt..."
+              value={newChatMessage}
+              onChange={(e) => setNewChatMessage(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

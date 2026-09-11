@@ -2,37 +2,25 @@
 
 import React from "react";
 import {
-  LayoutDashboard,
+  Home,
   MessageSquare,
-  Users,
-  UserCheck,
-  Calendar,
   Headphones,
   TrendingUp,
+  Calendar as CalendarIcon,
+  LayoutTemplate,
+  Sliders,
+  BookOpen,
+  Settings as SettingsIcon,
+  Users,
   Database,
   Plug,
   BarChart3,
-  Settings,
   Smartphone,
+  Bot,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
   Sparkles
 } from "lucide-react";
-
-interface NavItem {
-  id: number;
-  label: string;
-  icon: any;
-  dot?: string;
-  badge?: string;
-  badgeColor?: string;
-}
-
-interface NavSection {
-  title: string;
-  items: NavItem[];
-}
 
 interface SidebarProps {
   activeScreen: number;
@@ -45,142 +33,195 @@ export default function Sidebar({
   activeScreen,
   setActiveScreen,
   collapsed,
-  setCollapsed,
+  setCollapsed
 }: SidebarProps) {
-  const navSections: NavSection[] = [
-    {
-      title: "Overview",
-      items: [
-        { id: 2, label: "Dashboard", icon: LayoutDashboard },
-        { id: 3, label: "Live Conversations", icon: MessageSquare, badge: "6 Live", badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
-      ]
-    },
-    {
-      title: "Autonomous AI Agents",
-      items: [
-        { id: 4, label: "Support Agent", icon: Headphones, dot: "bg-blue-400" },
-        { id: 5, label: "Sales & Commerce", icon: TrendingUp, dot: "bg-teal-400" },
-        { id: 6, label: "Appointment Agent", icon: Calendar, dot: "bg-purple-400" },
-      ]
-    },
-    {
-      title: "Growth & Operations",
-      items: [
-        { id: 7, label: "Leads Management", icon: UserCheck, badge: "Hot", badgeColor: "bg-red-500/20 text-red-300 border-red-500/30" },
-        { id: 8, label: "Calendar Schedule", icon: Calendar },
-        { id: 9, label: "Knowledge Base (RAG)", icon: Database, badge: "Vector", badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
-      ]
-    },
-    {
-      title: "Platform",
-      items: [
-        { id: 10, label: "Integrations Hub", icon: Plug, badge: "Connected", badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
-        { id: 11, label: "Analytics & Reports", icon: BarChart3 },
-        { id: 12, label: "Settings & Team", icon: Settings },
-        { id: 13, label: "Mobile Experience", icon: Smartphone },
-      ]
-    }
+  const primaryNav = [
+    { id: 2, label: "Home", icon: Home },
+    { id: 3, label: "Conversations", icon: MessageSquare, badge: "6" },
+    { id: 4, label: "Support Agent", icon: Headphones },
+    { id: 5, label: "Sales Agent", icon: TrendingUp },
+    { id: 6, label: "Appointment Agent", icon: CalendarIcon },
+    { id: 14, label: "Templates", icon: LayoutTemplate },
+    { id: 15, label: "Account Setup", icon: Sliders },
+    { id: 16, label: "Documentation", icon: BookOpen },
+    { id: 12, label: "Settings", icon: SettingsIcon }
+  ];
+
+  const operationsNav = [
+    { id: 7, label: "Leads CRM", icon: Users },
+    { id: 8, label: "Calendar", icon: CalendarIcon },
+    { id: 9, label: "Knowledge Base", icon: Database },
+    { id: 10, label: "AI Assistant", icon: Sparkles },
+    { id: 11, label: "Analytics", icon: BarChart3 },
+    { id: 17, label: "Integrations", icon: Plug },
+    { id: 13, label: "Mobile Experience", icon: Smartphone }
   ];
 
   return (
     <aside
-      className={`bg-[#061226] text-slate-300 border-r border-slate-800/80 transition-all duration-300 flex flex-col justify-between shrink-0 shadow-lg ${
-        collapsed ? "w-18" : "w-64"
+      className={`bg-white border-r border-slate-200/90 transition-all duration-200 flex flex-col justify-between shrink-0 select-none z-30 ${
+        collapsed ? "w-16" : "w-60"
       }`}
     >
-      <div className="flex flex-col h-full overflow-hidden">
-        
-        {/* Collapse / Expand Toggle Button */}
-        <div className="p-3 border-b border-slate-800/80 flex items-center justify-between">
+      {/* Top Branding Header */}
+      <div>
+        <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100">
           {!collapsed ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Navigation</span>
+            <div
+              onClick={() => setActiveScreen(2)}
+              className="flex items-center gap-2.5 cursor-pointer group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                <Bot className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-slate-900 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
+                  Nexa AI
+                </div>
+                <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                  GHL Assistant
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="w-full flex justify-center">
-              <Sparkles className="w-4 h-4 text-blue-400" />
+            <div
+              onClick={() => setActiveScreen(2)}
+              className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center cursor-pointer mx-auto shadow-xs"
+            >
+              <Bot className="w-4 h-4" />
             </div>
           )}
+
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? (
+              <ChevronRight className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronLeft className="w-3.5 h-3.5" />
+            )}
           </button>
         </div>
 
-        {/* Navigation Sections */}
-        <div className="flex-1 overflow-y-auto p-2.5 space-y-4">
-          {navSections.map((section, idx) => (
-            <div key={idx} className="space-y-1">
-              {!collapsed && (
-                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  {section.title}
-                </div>
-              )}
-              {section.items.map((item) => {
-                const isActive = activeScreen === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveScreen(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer group ${
-                      isActive
-                        ? "bg-[#1677FF] text-white shadow-md shadow-blue-600/30 font-semibold"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                    } ${collapsed ? "justify-center px-0" : ""}`}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <item.icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${isActive ? "text-white" : "text-slate-400"}`} />
-                    
-                    {!collapsed && (
-                      <span className="flex-1 text-left truncate">{item.label}</span>
-                    )}
+        {/* Navigation List */}
+        <div className="p-3 space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto">
+          {/* Main Navigation */}
+          <div className="space-y-0.5">
+            {primaryNav.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeScreen === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveScreen(item.id)}
+                  title={collapsed ? item.label : undefined}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-blue-50/90 text-blue-600 font-bold"
+                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
+                  } ${collapsed ? "justify-center px-2" : ""}`}
+                >
+                  <Icon
+                    className={`w-4 h-4 shrink-0 ${
+                      isActive ? "text-blue-600" : "text-slate-400"
+                    }`}
+                  />
+                  {!collapsed && (
+                    <span className="truncate flex-1 text-left">
+                      {item.label}
+                    </span>
+                  )}
+                  {!collapsed && item.badge && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-700">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-                    {!collapsed && item.dot && (
-                      <span className={`w-2 h-2 rounded-full ${item.dot} shrink-0`}></span>
-                    )}
-
-                    {!collapsed && item.badge && (
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${item.badgeColor}`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom Platform Status Card */}
-        {!collapsed && (
-          <div className="p-3 m-2.5 bg-[#091834] rounded-xl border border-slate-800 text-xs">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Suite Health
-              </span>
-              <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                100% Online
-              </span>
-            </div>
-            <div className="space-y-1 text-[11px] text-slate-400">
-              <div className="flex justify-between">
-                <span>RAG Cosine Threshold:</span>
-                <span className="text-slate-200 font-mono">65%</span>
+          {/* Growth & Operations Section */}
+          {!collapsed && (
+            <div className="pt-2 border-t border-slate-100">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
+                Operations & Growth
               </div>
-              <div className="flex justify-between">
-                <span>Multi-Tenant ID:</span>
-                <span className="text-slate-200 font-mono">org-acme-1</span>
+              <div className="space-y-0.5 mt-1">
+                {operationsNav.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeScreen === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveScreen(item.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-blue-50/90 text-blue-600 font-bold"
+                          : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
+                      }`}
+                    >
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${
+                          isActive ? "text-blue-600" : "text-slate-400"
+                        }`}
+                      />
+                      <span className="truncate flex-1 text-left">
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Footer: System Online Status & User Profile */}
+      <div className="p-3 border-t border-slate-100 bg-slate-50/40">
+        {!collapsed ? (
+          <div className="space-y-2">
+            {/* System Status Pill */}
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-[11px] font-medium text-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 badge-pulse shrink-0" />
+              <div className="leading-tight">
+                <span className="font-semibold">System Online</span>
+                <span className="text-[10px] text-emerald-600 ml-1">Uptime 99.9%</span>
+              </div>
+            </div>
+
+            {/* Profile Bar */}
+            <div className="flex items-center gap-2 px-2 py-1">
+              <div className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                O
+              </div>
+              <div className="truncate">
+                <div className="text-xs font-bold text-slate-800 leading-tight">
+                  Okasha
+                </div>
+                <div className="text-[10px] text-slate-500 leading-none">
+                  Administrator
+                </div>
               </div>
             </div>
           </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 py-1">
+            <span
+              className="w-2 h-2 rounded-full bg-emerald-500 badge-pulse"
+              title="System Online (Uptime 99.9%)"
+            />
+            <div
+              className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold"
+              title="Okasha (Administrator)"
+            >
+              O
+            </div>
+          </div>
         )}
-
       </div>
     </aside>
   );

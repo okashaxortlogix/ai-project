@@ -67,6 +67,7 @@ export interface Product {
   image: string;
   rating: number;
   badge?: string;
+  category?: string;
 }
 
 export interface KnowledgeDoc {

@@ -17,6 +17,10 @@ import Screen10Integrations from "@/components/Screen10Integrations";
 import Screen11Analytics from "@/components/Screen11Analytics";
 import Screen12Settings from "@/components/Screen12Settings";
 import Screen13MobileView from "@/components/Screen13MobileView";
+import ScreenTemplates from "@/components/ScreenTemplates";
+import ScreenAccountSetup from "@/components/ScreenAccountSetup";
+import ScreenDocumentation from "@/components/ScreenDocumentation";
+import ScreenAIAssistant from "@/components/ScreenAIAssistant";
 import { Product, productsList } from "@/lib/data";
 import { Maximize2, ExternalLink } from "lucide-react";
 
@@ -55,7 +59,6 @@ export default function HomePage() {
   const handleResetDemo = () => {
     setCartItems([{ product: productsList[0], quantity: 1 }]);
     setActiveScreen(2);
-    alert("Demo state reset to initial baseline.");
   };
 
   const getScreenMeta = () => {
@@ -63,15 +66,15 @@ export default function HomePage() {
       case 1:
         return { category: "Access", title: "Authentication & Security", subtitle: "Manage user credentials and multi-tenant organization access" };
       case 2:
-        return { category: "Overview", title: "Executive Dashboard", subtitle: "Real-time key performance indicators, lead conversions, and volume trends" };
+        return { category: "Overview", title: "Dashboard", subtitle: "Real-time key performance indicators, lead conversions, and volume trends" };
       case 3:
         return { category: "Inbox", title: "Live Conversations", subtitle: "Unified omnichannel customer chat inbox with real-time AI copilot" };
       case 4:
-        return { category: "AI Agents", title: "Customer Support Agent", subtitle: "Autonomous FAQ resolution, shipping policies, and live order tracking" };
+        return { category: "AI Agents", title: "Support Agent", subtitle: "Autonomous FAQ resolution, shipping policies, and live order tracking" };
       case 5:
-        return { category: "AI Agents", title: "Sales & Recommendation Agent", subtitle: "Catalog discovery, objection handling, promo codes, and lead capture" };
+        return { category: "AI Agents", title: "Sales Agent", subtitle: "Catalog discovery, objection handling, promo codes, and lead capture" };
       case 6:
-        return { category: "AI Agents", title: "Appointment Booking Agent", subtitle: "Calendar availability, meeting reservations, and automated confirmation" };
+        return { category: "AI Agents", title: "Appointment Agent", subtitle: "Calendar availability, meeting reservations, and automated confirmation" };
       case 7:
         return { category: "Growth", title: "Leads Management CRM", subtitle: "Track, filter, and qualify conversational sales prospects with auto-scoring" };
       case 8:
@@ -79,15 +82,23 @@ export default function HomePage() {
       case 9:
         return { category: "Knowledge", title: "RAG Knowledge Base", subtitle: "Vector embeddings, sliding-window chunking, and semantic source grounding" };
       case 10:
-        return { category: "Ecosystem", title: "Integrations Marketplace", subtitle: "Connect Google Calendar, Shopify, HubSpot, WhatsApp, and Twilio" };
+        return { category: "Assistant", title: "AI Assistant", subtitle: "Full-page AI assistant for funnels, workflows, and automated operations" };
       case 11:
         return { category: "Intelligence", title: "Analytics & Reports", subtitle: "Conversion funnels, agent CSAT ratings, and channel volume breakdown" };
       case 12:
-        return { category: "Governance", title: "Settings & Team Members", subtitle: "Manage organization profile, member roles (Admin/Agent/Viewer), and policies" };
+        return { category: "Settings", title: "Settings & Team", subtitle: "Manage organization profile, AI models, notifications, appearance, and team" };
       case 13:
-        return { category: "Preview", title: "Mobile Experience Simulator", subtitle: "Responsive customer web chat widget and staff mobile management console" };
+        return { category: "Channels", title: "Mobile Experience", subtitle: "Communication channels configuration and live responsive simulator" };
+      case 14:
+        return { category: "Templates", title: "Templates Library", subtitle: "Pre-built funnels, websites, workflows, and campaigns" };
+      case 15:
+        return { category: "Configuration", title: "Account Setup", subtitle: "Configure your GHL account settings, integrations, and preferences" };
+      case 16:
+        return { category: "Guides", title: "Documentation", subtitle: "Find guides, tutorials, and helpful resources" };
+      case 17:
+        return { category: "Ecosystem", title: "Integrations Hub", subtitle: "Connect Google Calendar, Shopify, WooCommerce, and messaging APIs" };
       default:
-        return { category: "Platform", title: "AI Conversation & Sales Suite", subtitle: "Turn Conversations into Customers 24/7" };
+        return { category: "Platform", title: "Nexa AI / GHL Assistant", subtitle: "Enterprise AI Conversation & Sales Suite" };
     }
   };
 
@@ -100,25 +111,33 @@ export default function HomePage() {
       case 3:
         return <Screen3LiveChat onNavigate={(screen) => setActiveScreen(screen)} />;
       case 4:
-        return <Screen4SupportAgent />;
+        return <Screen4SupportAgent onNavigate={(screen) => setActiveScreen(screen)} />;
       case 5:
-        return <Screen5SalesAgent onAddToCart={handleAddToCart} />;
+        return <Screen5SalesAgent onAddToCart={handleAddToCart} onNavigate={(screen) => setActiveScreen(screen)} />;
       case 6:
-        return <Screen6AppointmentAgent />;
+        return <Screen6AppointmentAgent onNavigate={(screen) => setActiveScreen(screen)} />;
       case 7:
-        return <Screen7Leads />;
+        return <Screen7Leads onNavigate={(screen) => setActiveScreen(screen)} />;
       case 8:
         return <Screen8Calendar />;
       case 9:
-        return <Screen9KnowledgeBase />;
+        return <Screen9KnowledgeBase onNavigate={(screen) => setActiveScreen(screen)} />;
       case 10:
-        return <Screen10Integrations />;
+        return <ScreenAIAssistant onNavigate={(screen) => setActiveScreen(screen)} />;
       case 11:
-        return <Screen11Analytics />;
+        return <Screen11Analytics onNavigate={(screen) => setActiveScreen(screen)} />;
       case 12:
-        return <Screen12Settings />;
+        return <Screen12Settings onNavigate={(screen) => setActiveScreen(screen)} />;
       case 13:
-        return <Screen13MobileView />;
+        return <Screen13MobileView onNavigate={(screen) => setActiveScreen(screen)} />;
+      case 14:
+        return <ScreenTemplates onNavigate={(screen) => setActiveScreen(screen)} />;
+      case 15:
+        return <ScreenAccountSetup onNavigate={(screen) => setActiveScreen(screen)} />;
+      case 16:
+        return <ScreenDocumentation onNavigate={(screen) => setActiveScreen(screen)} />;
+      case 17:
+        return <Screen10Integrations onNavigate={(screen) => setActiveScreen(screen)} />;
       default:
         return <Screen2Dashboard onNavigate={(screen) => setActiveScreen(screen)} />;
     }
@@ -127,7 +146,7 @@ export default function HomePage() {
   const meta = getScreenMeta();
 
   return (
-    <div className="min-h-screen bg-[#071329] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900">
       {/* Top Universal Branding Header */}
       <Header
         viewMode={viewMode}
@@ -152,63 +171,8 @@ export default function HomePage() {
             />
 
             <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
-              {/* Contextual Page Header Bar */}
-              <div className="bg-white border-b border-slate-200/80 px-6 py-4 sticky top-0 z-10 shadow-2xs">
-                <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                      <span>Platform</span>
-                      <span>/</span>
-                      <span className="text-blue-600">{meta.category}</span>
-                      <span>/</span>
-                      <span className="text-slate-700">{meta.title}</span>
-                    </div>
-                    <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                      {meta.title}
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {meta.subtitle}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {activeScreen === 3 && (
-                      <button
-                        onClick={() => setActiveScreen(4)}
-                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 transition-colors cursor-pointer"
-                      >
-                        Support Bot View
-                      </button>
-                    )}
-                    {activeScreen === 7 && (
-                      <button
-                        onClick={() => setActiveScreen(5)}
-                        className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-semibold border border-teal-200 transition-colors cursor-pointer"
-                      >
-                        Sales Catalog
-                      </button>
-                    )}
-                    {activeScreen === 8 && (
-                      <button
-                        onClick={() => setActiveScreen(6)}
-                        className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold border border-purple-200 transition-colors cursor-pointer"
-                      >
-                        Book New Demo
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setViewMode("poster")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium border border-slate-200 transition-colors cursor-pointer"
-                      title="View all 13 screens side-by-side"
-                    >
-                      <span>Show All 13 Screens</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Content Card Container */}
-              <div className="max-w-[1600px] mx-auto p-4 lg:p-6">
+              {/* Main Active Screen Content */}
+              <div className="max-w-[1600px] mx-auto">
                 {renderActiveScreenContent()}
               </div>
             </main>

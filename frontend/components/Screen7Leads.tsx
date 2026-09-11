@@ -6,37 +6,56 @@ import {
   Search,
   Filter,
   Download,
-  MoreHorizontal,
-  Flame,
-  Star,
-  CheckCircle2,
-  X,
+  Upload,
+  Plus,
   Mail,
   Phone,
-  Building,
-  Calendar,
-  ExternalLink,
-  Plus
+  CheckCircle2,
+  Trash2,
+  Edit2,
+  UserCheck,
+  ChevronRight
 } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Modal } from "@/components/ui/Modal";
 import { api } from "@/lib/api";
 
 interface Screen7LeadsProps {
-  onSelectLead?: (lead: any) => void;
+  onNavigate?: (screen: number) => void;
   isCompact?: boolean;
 }
 
-export default function Screen7Leads({ onSelectLead, isCompact = false }: Screen7LeadsProps) {
+export default function Screen7Leads({ onNavigate, isCompact = false }: Screen7LeadsProps) {
   const [leads, setLeads] = useState<any[]>([]);
   const [filter, setFilter] = useState<string>("All");
   const [search, setSearch] = useState("");
-  const [activeLeadModal, setActiveLeadModal] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedLead, setSelectedLead] = useState<any | null>(null);
+  const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+
+  // Form states
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newSource, setNewSource] = useState("Website Chat");
+  const [newStatus, setNewStatus] = useState("New");
 
   const loadLeads = async () => {
     try {
       const res = await api.getLeads(filter, search);
-      if (res.success && res.data) {
+      if (res.success && res.data && res.data.length > 0) {
         setLeads(res.data);
+      } else {
+        // Fallback default leads if db empty
+        setLeads([
+          { id: "1", name: "Sarah Ahmed", email: "sarah@gmail.com", phone: "+1 (555) 234-8901", source: "Live Chat", status: "Qualified", agent: "Appointment Agent", lastActivity: "10 mins ago" },
+          { id: "2", name: "Ali Raza", email: "ali.raza@acme.com", phone: "+1 (555) 789-1234", source: "Website Funnel", status: "Contacted", agent: "Sales Agent", lastActivity: "45 mins ago" },
+          { id: "3", name: "Fatima Khan", email: "fatima@acme.com", phone: "+1 (555) 456-7890", source: "Shopify Store", status: "Converted", agent: "Support Agent", lastActivity: "2 hours ago" },
+          { id: "4", name: "Usman Tariq", email: "usman@gmail.com", phone: "+1 (555) 890-4321", source: "Inbound SMS", status: "New", agent: "Sales Agent", lastActivity: "4 hours ago" },
+          { id: "5", name: "Ayesha Malik", email: "ayesha@tech.com", phone: "+1 (555) 321-6549", source: "Facebook Ad", status: "Lost", agent: "Sales Agent", lastActivity: "1 day ago" }
+        ]);
       }
     } catch (e) {
       console.error("Failed to load leads from API", e);
@@ -49,324 +68,359 @@ export default function Screen7Leads({ onSelectLead, isCompact = false }: Screen
     loadLeads();
   }, [filter, search]);
 
-  const handleUpdateStatus = async (leadId: string, newStatus: string) => {
+  const handleUpdateStatus = async (leadId: string, newStat: string) => {
     try {
-      await api.updateLead(leadId, { status: newStatus });
-      await loadLeads();
-      if (activeLeadModal && activeLeadModal.id === leadId) {
-        setActiveLeadModal((prev: any) => ({ ...prev, status: newStatus }));
+      await api.updateLead(leadId, { status: newStat });
+      setLeads((prev) =>
+        prev.map((l) => (l.id === leadId ? { ...l, status: newStat } : l))
+      );
+      if (selectedLead && selectedLead.id === leadId) {
+        setSelectedLead((prev: any) => ({ ...prev, status: newStat }));
       }
     } catch (e) {
       console.error("Failed to update lead status", e);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Hot":
-        return "bg-red-100 text-red-700 border-red-200";
-      case "Qualified":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "Contacted":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      case "New":
-        return "bg-slate-100 text-slate-700 border-slate-200";
-      default:
-        return "bg-amber-100 text-amber-700 border-amber-200";
-    }
+  const handleCreateLead = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || !newEmail.trim()) return;
+
+    const newL = {
+      id: `lead-${Date.now()}`,
+      name: newName,
+      email: newEmail,
+      phone: newPhone || "+1 (555) 000-0000",
+      source: newSource,
+      status: newStatus,
+      agent: "Sales Agent",
+      lastActivity: "Just now"
+    };
+
+    setLeads((prev) => [newL, ...prev]);
+    setNewName("");
+    setNewEmail("");
+    setNewPhone("");
+    setIsAddLeadModalOpen(false);
   };
 
   const handleExport = () => {
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      ["Name,Email,Phone,Source,Status,Score", ...leads.map((l) => `${l.name},${l.email},${l.phone},${l.source},${l.status},${l.score}`)].join("\n");
+      ["Name,Email,Phone,Source,Status,Agent,LastActivity", ...leads.map((l) => `${l.name},${l.email},${l.phone},${l.source},${l.status},${l.agent || "Sales Agent"},${l.lastActivity || "Today"}`)].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "leads_export.csv");
+    link.setAttribute("download", "ghl_leads_export.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
+  const filteredLeads = leads.filter((l) => {
+    const matchesFilter = filter === "All" || l.status.toLowerCase() === filter.toLowerCase();
+    const matchesSearch =
+      search === "" ||
+      l.name.toLowerCase().includes(search.toLowerCase()) ||
+      l.email.toLowerCase().includes(search.toLowerCase()) ||
+      l.phone.includes(search);
+    return matchesFilter && matchesSearch;
+  });
+
   return (
-    <div className={`w-full bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col ${isCompact ? "text-xs" : ""}`}>
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-slate-900">Leads Management</h3>
-            <span className="text-[10px] bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded-full border border-blue-200">
-              {leads.length} Persistent Leads (API)
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Real-time multi-tenant lead scoring & automated intent qualification
-          </p>
+    <div className="p-6 max-w-[1400px] mx-auto space-y-6">
+      {/* Breadcrumb & Header */}
+      <div>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+          <span
+            onClick={() => onNavigate?.(2)}
+            className="cursor-pointer hover:text-blue-600 transition-colors"
+          >
+            Home
+          </span>
+          <span>/</span>
+          <span className="text-slate-800 font-semibold">Leads Management</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1677FF] hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export CSV</span>
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Leads Management CRM
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Track, qualify, and manage leads captured across all conversational channels.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Download}
+              onClick={handleExport}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Plus}
+              onClick={() => setIsAddLeadModalOpen(true)}
+            >
+              Add Lead
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 my-4">
-        {/* Status Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-          {["All", "New", "Contacted", "Qualified", "Hot"].map((f) => (
+      {/* Filter and Search Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
+          {["All", "New", "Qualified", "Contacted", "Converted", "Lost"].map((st) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                filter === f
-                  ? "bg-slate-900 text-white shadow-xs"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              key={st}
+              onClick={() => setFilter(st)}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                filter === st
+                  ? "bg-blue-600 text-white shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              {f}
+              {st}
             </button>
           ))}
         </div>
 
-        {/* Search Input */}
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+        {/* Search input */}
+        <div className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search leads by name, email, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs"
+          />
+        </div>
+      </div>
+
+      {/* CRM Table */}
+      <Card className="overflow-hidden shadow-2xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200/90 text-slate-500 font-semibold uppercase text-[10px]">
+                <th className="p-3 pl-4">Name</th>
+                <th className="p-3">Email</th>
+                <th className="p-3">Phone</th>
+                <th className="p-3">Source</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Agent</th>
+                <th className="p-3">Last Activity</th>
+                <th className="p-3 pr-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredLeads.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-slate-400 text-xs">
+                    No leads matching your current filter.
+                  </td>
+                </tr>
+              ) : (
+                filteredLeads.map((l) => (
+                  <tr
+                    key={l.id}
+                    onClick={() => setSelectedLead(l)}
+                    className="hover:bg-blue-50/30 transition-colors cursor-pointer"
+                  >
+                    <td className="p-3 pl-4 font-bold text-slate-900">{l.name}</td>
+                    <td className="p-3 text-slate-600">{l.email}</td>
+                    <td className="p-3 text-slate-600 font-mono text-[11px]">{l.phone}</td>
+                    <td className="p-3">
+                      <span className="text-[10px] font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                        {l.source}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <StatusBadge
+                        variant={
+                          l.status === "Qualified" || l.status === "Converted"
+                            ? "active"
+                            : l.status === "Lost"
+                            ? "error"
+                            : "connected"
+                        }
+                        label={l.status}
+                      />
+                    </td>
+                    <td className="p-3 text-slate-700 font-medium">{l.agent || "Sales Agent"}</td>
+                    <td className="p-3 text-slate-400 text-[11px]">{l.lastActivity || "Today"}</td>
+                    <td className="p-3 pr-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedLead(l);
+                        }}
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+                      >
+                        Details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Add Lead Modal */}
+      <Modal
+        isOpen={isAddLeadModalOpen}
+        onClose={() => setIsAddLeadModalOpen(false)}
+        title="Add New Lead"
+        description="Create a lead profile in GoHighLevel CRM."
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setIsAddLeadModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleCreateLead}>
+              Save Lead
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleCreateLead} className="space-y-3 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
             <input
               type="text"
-              placeholder="Search leads..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="e.g. Hamza Ali"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
+              required
             />
           </div>
-
-          <button className="flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-50 font-medium">
-            <Filter className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Filters</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Leads Table */}
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
-              <th className="py-2.5 px-3">Name</th>
-              <th className="py-2.5 px-3">Email</th>
-              <th className="py-2.5 px-3">Phone</th>
-              <th className="py-2.5 px-3">Source</th>
-              <th className="py-2.5 px-3">Status</th>
-              <th className="py-2.5 px-3">Score</th>
-              <th className="py-2.5 px-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {leads.map((lead) => (
-              <tr
-                key={lead.id}
-                onClick={() => setActiveLeadModal(lead)}
-                className="hover:bg-blue-50/40 transition-colors cursor-pointer"
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Email</label>
+            <input
+              type="email"
+              placeholder="hamza@gmail.com"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
+              required
+            />
+          </div>
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Phone</label>
+            <input
+              type="text"
+              placeholder="+1 (555) 123-4567"
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Source</label>
+              <select
+                value={newSource}
+                onChange={(e) => setNewSource(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
               >
-                <td className="py-2.5 px-3">
-                  <div className="flex items-center gap-2.5">
-                    <img
-                      src={lead.avatar}
-                      alt={lead.name}
-                      className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200 shrink-0"
-                    />
-                    <div>
-                      <span className="font-semibold text-slate-900 block truncate">
-                        {lead.name}
-                      </span>
-                      {lead.company && (
-                        <span className="text-[10px] text-slate-400 block truncate">
-                          {lead.company}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </td>
-
-                <td className="py-2.5 px-3 text-slate-600 truncate max-w-[150px]">
-                  {lead.email}
-                </td>
-
-                <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">
-                  {lead.phone}
-                </td>
-
-                <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-slate-100 font-medium">
-                    {lead.source}
-                  </span>
-                </td>
-
-                <td className="py-2.5 px-3 whitespace-nowrap">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getStatusBadge(
-                      lead.status
-                    )}`}
-                  >
-                    {lead.status === "Hot" && <Flame className="w-2.5 h-2.5 mr-1 fill-red-500 text-red-500" />}
-                    {lead.status}
-                  </span>
-                </td>
-
-                <td className="py-2.5 px-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-12 h-2 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                      <div
-                        className={`h-full rounded-full ${
-                          lead.score >= 80
-                            ? "bg-red-500"
-                            : lead.score >= 60
-                            ? "bg-emerald-500"
-                            : "bg-blue-500"
-                        }`}
-                        style={{ width: `${lead.score}%` }}
-                      ></div>
-                    </div>
-                    <span className="font-bold text-slate-800 text-[11px]">
-                      {lead.score}
-                    </span>
-                  </div>
-                </td>
-
-                <td className="py-2.5 px-3 text-right">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveLeadModal(lead);
-                    }}
-                    className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Lead Detail & Scoring Breakdown Modal */}
-      {activeLeadModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-xl max-w-md w-full p-5 border border-slate-200 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <img
-                  src={activeLeadModal.avatar}
-                  alt={activeLeadModal.name}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-500/20"
-                />
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">{activeLeadModal.name}</h4>
-                  <p className="text-[11px] text-slate-400">{activeLeadModal.company || "Independent Buyer"}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveLeadModal(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
+                <option value="Website Chat">Website Chat</option>
+                <option value="Shopify Store">Shopify Store</option>
+                <option value="Inbound SMS">Inbound SMS</option>
+                <option value="Facebook Ad">Facebook Ad</option>
+              </select>
             </div>
-
-            <div className="py-4 space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Lead Score</span>
-                  <div className="text-xl font-bold text-slate-900 flex items-center gap-1 mt-0.5">
-                    {activeLeadModal.score}/100
-                    <span className="text-[10px] font-semibold text-emerald-600 px-1.5 py-0.2 bg-emerald-50 rounded">
-                      High Intent
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Stage</span>
-                  <div className="mt-1 flex items-center gap-1">
-                    {["New", "Contacted", "Qualified", "Hot"].map((st) => (
-                      <button
-                        key={st}
-                        onClick={() => handleUpdateStatus(activeLeadModal.id, st)}
-                        className={`text-[10px] px-1.5 py-0.5 rounded font-semibold cursor-pointer ${
-                          activeLeadModal.status === st ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{activeLeadModal.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{activeLeadModal.phone}</span>
-                </div>
-              </div>
-
-              {/* Scoring Factors */}
-              <div>
-                <div className="font-semibold text-slate-800 mb-1.5">AI Scoring Breakdown:</div>
-                <div className="space-y-1 text-[11px] text-slate-600">
-                  <div className="flex justify-between">
-                    <span>• High buying intent detected in conversation</span>
-                    <span className="font-semibold text-emerald-600">+35 pts</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>• Budget confirmed ($800+)</span>
-                    <span className="font-semibold text-emerald-600">+25 pts</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>• Appointment booked with Sales Agent</span>
-                    <span className="font-semibold text-emerald-600">+25 pts</span>
-                  </div>
-                </div>
-              </div>
-
-              {activeLeadModal.notes && (
-                <div className="p-2.5 bg-blue-50/60 rounded-lg border border-blue-100 text-[11px] text-blue-900">
-                  <strong>Notes:</strong> {activeLeadModal.notes}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                onClick={() => setActiveLeadModal(null)}
-                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold"
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Initial Status</label>
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900"
               >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  alert(`Assigned ${activeLeadModal.name} to Sales Director.`);
-                  setActiveLeadModal(null);
-                }}
-                className="px-3 py-1.5 bg-[#1677FF] hover:bg-blue-600 text-white rounded-lg text-xs font-semibold"
-              >
-                Assign Representative
-              </button>
+                <option value="New">New</option>
+                <option value="Qualified">Qualified</option>
+                <option value="Contacted">Contacted</option>
+              </select>
             </div>
           </div>
-        </div>
+        </form>
+      </Modal>
+
+      {/* View/Edit Lead Modal */}
+      {selectedLead && (
+        <Modal
+          isOpen={!!selectedLead}
+          onClose={() => setSelectedLead(null)}
+          title={`Lead Profile: ${selectedLead.name}`}
+          description={`Captured via ${selectedLead.source}`}
+          size="md"
+          footer={
+            <div className="flex items-center justify-between w-full">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setLeads((prev) => prev.filter((l) => l.id !== selectedLead.id));
+                  setSelectedLead(null);
+                }}
+              >
+                Delete Lead
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setSelectedLead(null)}>
+                Close
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-slate-50 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Email:</span>
+                <span className="font-semibold text-slate-900">{selectedLead.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Phone:</span>
+                <span className="font-semibold text-slate-900">{selectedLead.phone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Assigned Agent:</span>
+                <span className="font-semibold text-slate-900">{selectedLead.agent || "Sales Agent"}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Change Pipeline Status
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {["New", "Qualified", "Contacted", "Converted", "Lost"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleUpdateStatus(selectedLead.id, s)}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold cursor-pointer border ${
+                      selectedLead.status === s
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
