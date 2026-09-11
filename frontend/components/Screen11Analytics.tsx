@@ -7,7 +7,8 @@ import {
   MessageSquare,
   CheckCircle2,
   Clock,
-  Target
+  Target,
+  TrendingUp
 } from "lucide-react";
 import Button from "./ui/Button";
 import Card from "./ui/Card";
@@ -162,6 +163,59 @@ export default function Screen11Analytics({ onNavigate, isCompact = false }: Scr
             </Card>
           );
         })}
+      </div>
+
+      {/* Enterprise AI Financial ROI & Wage Savings Breakdown */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-2xl p-6 shadow-sm border border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold tracking-wide uppercase">
+                Executive ROI Metrics
+              </span>
+              <span className="text-xs text-slate-300">Financial Impact &amp; Resource Efficiency</span>
+            </div>
+            <h3 className="text-base font-bold text-white mt-1">
+              Estimated Financial Return &amp; Wage Savings
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Calculated automatically based on 2,847 autonomous resolutions at standard customer support wage benchmarks.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>11.6x Monthly ROI</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+          <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-xs text-slate-400">Monthly Support Wages Saved</span>
+            <div className="text-2xl font-bold text-emerald-400 mt-1">$3,450.00</div>
+            <p className="text-[11px] text-slate-400 mt-1">Equivalent to 142 human support hours</p>
+          </div>
+
+          <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-xs text-slate-400">Influenced Sales Revenue</span>
+            <div className="text-2xl font-bold text-blue-300 mt-1">$14,890.00</div>
+            <p className="text-[11px] text-slate-400 mt-1">Recovered carts &amp; catalog recommendations</p>
+          </div>
+
+          <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-xs text-slate-400">Autonomous Resolution Rate</span>
+            <div className="text-2xl font-bold text-purple-300 mt-1">96.2%</div>
+            <p className="text-[11px] text-slate-400 mt-1">Only 3.8% required human agent escalation</p>
+          </div>
+
+          <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+            <span className="text-xs text-slate-400">Avg Cost Per Interaction</span>
+            <div className="text-2xl font-bold text-amber-300 mt-1">&lt; $0.02</div>
+            <p className="text-[11px] text-slate-400 mt-1">Vs. $4.50 industry human agent benchmark</p>
+          </div>
+        </div>
       </div>
 
       {/* Charts Section */}

@@ -38,7 +38,14 @@ interface TeamMember {
 }
 
 export default function Screen12Settings({ onNavigate, isCompact = false }: Screen12SettingsProps) {
-  const [activeTab, setActiveTab] = useState<"General" | "Model" | "Notifications" | "Appearance" | "Team">("General");
+  const [activeTab, setActiveTab] = useState<"General" | "Model" | "Notifications" | "Appearance" | "Team" | "WhiteLabel">("General");
+
+  // White-label state
+  const [agencyName, setAgencyName] = useState("Acme Digital Agency");
+  const [customDomain, setCustomDomain] = useState("chat.acmedigital.com");
+  const [customLogoUrl, setCustomLogoUrl] = useState("https://assets.example.com/agency-logo.svg");
+  const [agencyColor, setAgencyColor] = useState("#2563EB");
+  const [removeBranding, setRemoveBranding] = useState(true);
 
   // General tab state
   const [name, setName] = useState("Nexa AI");
@@ -161,7 +168,8 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
           { id: "Model", label: "Model", icon: Cpu },
           { id: "Notifications", label: "Notifications", icon: Bell },
           { id: "Appearance", label: "Appearance", icon: Palette },
-          { id: "Team", label: "Team", icon: Users }
+          { id: "Team", label: "Team", icon: Users },
+          { id: "WhiteLabel", label: "White-Label & Branding", icon: Sparkles }
         ].map((t) => {
           const Icon = t.icon;
           const isActive = activeTab === t.id;
@@ -534,6 +542,128 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
                 ))}
               </tbody>
             </table>
+          </Card>
+        </div>
+      )}
+
+      {/* Tab 6: White-Label & Agency Reselling */}
+      {activeTab === "WhiteLabel" && (
+        <div className="space-y-6">
+          <Card className="p-6 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  White-Label &amp; Agency Reselling Mode
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Rebrand the customer chat widget and client portal under your agency name, custom logo, and domain.
+                </p>
+              </div>
+              <StatusBadge variant="active" label="Enterprise License Active" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Agency / Brand Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={agencyName}
+                    onChange={(e) => setAgencyName(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Replaces "Nexa AI" across all customer-facing widgets and email notifications.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Custom CNAME Domain
+                  </label>
+                  <input
+                    type="text"
+                    value={customDomain}
+                    onChange={(e) => setCustomDomain(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Point your CNAME DNS record to <code>cname.nexa-proxy.net</code> for custom SSL routing.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Custom SVG Logo URL
+                  </label>
+                  <input
+                    type="text"
+                    value={customLogoUrl}
+                    onChange={(e) => setCustomLogoUrl(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                <h4 className="text-xs font-bold text-slate-900">White-Label Branding Controls</h4>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-2">
+                    Primary Brand Accent Color
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {["#2563EB", "#4F46E5", "#7C3AED", "#059669", "#E11D48", "#0F172A"].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setAgencyColor(c)}
+                        className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer ${
+                          agencyColor === c ? "scale-110 border-slate-900 shadow-xs" : "border-white"
+                        }`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                    <span className="text-xs font-mono text-slate-600 ml-2">{agencyColor}</span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800">
+                        Remove "Powered by Nexa" Badge
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Hides all vendor attribution from the chat footer.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={removeBranding}
+                      onChange={(e) => setRemoveBranding(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setSaveToast(true);
+                      setTimeout(() => setSaveToast(false), 2500);
+                    }}
+                  >
+                    Save White-Label Settings
+                  </Button>
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
       )}

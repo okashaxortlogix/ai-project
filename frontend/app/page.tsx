@@ -21,14 +21,20 @@ import ScreenTemplates from "@/components/ScreenTemplates";
 import ScreenAccountSetup from "@/components/ScreenAccountSetup";
 import ScreenDocumentation from "@/components/ScreenDocumentation";
 import ScreenAIAssistant from "@/components/ScreenAIAssistant";
+import FloatingWidget from "@/components/FloatingWidget";
+import EmbedCodeModal from "@/components/EmbedCodeModal";
+import DemoSimulatorModal from "@/components/DemoSimulatorModal";
 import { Product, productsList } from "@/lib/data";
-import { Maximize2, ExternalLink } from "lucide-react";
+import { Maximize2, ExternalLink, Sparkles, CheckCircle2 } from "lucide-react";
 
 export default function HomePage() {
   const [viewMode, setViewMode] = useState<"workspace" | "poster">("workspace");
   const [activeScreen, setActiveScreen] = useState<number>(2);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [isEmbedModalOpen, setIsEmbedModalOpen] = useState<boolean>(false);
+  const [isSimulatorModalOpen, setIsSimulatorModalOpen] = useState<boolean>(false);
+  const [simulationToast, setSimulationToast] = useState<{ title: string; subtitle: string } | null>(null);
   const [cartItems, setCartItems] = useState<{ product: Product; quantity: number }[]>([
     { product: productsList[0], quantity: 1 }
   ]);
@@ -107,7 +113,13 @@ export default function HomePage() {
       case 1:
         return <Screen1Auth onSuccess={() => setActiveScreen(2)} />;
       case 2:
-        return <Screen2Dashboard onNavigate={(screen) => setActiveScreen(screen)} />;
+        return (
+          <Screen2Dashboard
+            onNavigate={(screen) => setActiveScreen(screen)}
+            onOpenEmbed={() => setIsEmbedModalOpen(true)}
+            onOpenSimulator={() => setIsSimulatorModalOpen(true)}
+          />
+        );
       case 3:
         return <Screen3LiveChat onNavigate={(screen) => setActiveScreen(screen)} />;
       case 4:
@@ -156,6 +168,8 @@ export default function HomePage() {
         cartCount={cartItems.reduce((acc, curr) => acc + curr.quantity, 0)}
         openCart={() => setIsCartOpen(true)}
         resetDemo={handleResetDemo}
+        onOpenEmbed={() => setIsEmbedModalOpen(true)}
+        onOpenSimulator={() => setIsSimulatorModalOpen(true)}
       />
 
       {/* Main Viewport Container */}
@@ -220,7 +234,12 @@ export default function HomePage() {
                     </button>
                   </div>
                   <div className="p-2 flex-1 flex">
-                    <Screen2Dashboard onNavigate={(s) => { setActiveScreen(s); setViewMode("workspace"); }} isCompact={true} />
+                    <Screen2Dashboard
+                      onNavigate={(s) => { setActiveScreen(s); setViewMode("workspace"); }}
+                      isCompact={true}
+                      onOpenEmbed={() => setIsEmbedModalOpen(true)}
+                      onOpenSimulator={() => setIsSimulatorModalOpen(true)}
+                    />
                   </div>
                 </div>
 
@@ -476,6 +495,38 @@ export default function HomePage() {
         onRemove={handleRemoveFromCart}
         onClear={handleClearCart}
       />
+
+      {/* Floating Live Customer Chat Widget */}
+      <FloatingWidget />
+
+      {/* Deploy Widget Embed Modal */}
+      <EmbedCodeModal
+        isOpen={isEmbedModalOpen}
+        onClose={() => setIsEmbedModalOpen(false)}
+      />
+
+      {/* Live Sales Demo & Webhook Simulator */}
+      <DemoSimulatorModal
+        isOpen={isSimulatorModalOpen}
+        onClose={() => setIsSimulatorModalOpen(false)}
+        onEventSimulated={(evt) => {
+          setSimulationToast({ title: evt.title, subtitle: evt.subtitle });
+          setTimeout(() => setSimulationToast(null), 4500);
+        }}
+      />
+
+      {/* Global Simulation Notification Toast */}
+      {simulationToast && (
+        <div className="fixed top-16 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-start gap-3 animate-in fade-in slide-in-from-top-4 duration-300 max-w-sm">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-bold text-white">{simulationToast.title}</p>
+            <p className="text-[11px] text-slate-300 mt-0.5">{simulationToast.subtitle}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

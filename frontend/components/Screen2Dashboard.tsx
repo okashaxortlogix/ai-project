@@ -19,7 +19,11 @@ import {
   Activity,
   Server,
   Database,
-  Plug
+  Plug,
+  Code2,
+  Zap,
+  ArrowRight,
+  ShieldCheck
 } from "lucide-react";
 import Card from "./ui/Card";
 import Button from "./ui/Button";
@@ -29,9 +33,16 @@ import { api } from "@/lib/api";
 interface Screen2DashboardProps {
   onNavigate?: (screen: number) => void;
   isCompact?: boolean;
+  onOpenEmbed?: () => void;
+  onOpenSimulator?: () => void;
 }
 
-export default function Screen2Dashboard({ onNavigate }: Screen2DashboardProps) {
+export default function Screen2Dashboard({
+  onNavigate,
+  isCompact = false,
+  onOpenEmbed,
+  onOpenSimulator
+}: Screen2DashboardProps) {
   const [dateFilter, setDateFilter] = useState("Today");
   const [metrics, setMetrics] = useState({
     conversations: 24,
@@ -209,6 +220,28 @@ export default function Screen2Dashboard({ onNavigate }: Screen2DashboardProps) 
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenSimulator && (
+            <button
+              onClick={onOpenSimulator}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Simulate live order, lead, or booking during sales pitches"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-600" />
+              <span>Simulate Event</span>
+            </button>
+          )}
+
+          {onOpenEmbed && (
+            <button
+              onClick={onOpenEmbed}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+              title="Get website 1-line script embed code"
+            >
+              <Code2 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Deploy Widget</span>
+            </button>
+          )}
+
           <button
             onClick={() => setDateFilter(dateFilter === "Today" ? "Last 7 Days" : "Today")}
             className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
@@ -287,6 +320,92 @@ export default function Screen2Dashboard({ onNavigate }: Screen2DashboardProps) 
           <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 badge-pulse" />
             <span>{metrics.agents_status}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Client Go-Live Readiness Stepper */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-5 shadow-sm border border-blue-800/60">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-blue-800/60">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold tracking-wide uppercase">
+                Production Readiness: 80% Complete
+              </span>
+              <span className="text-xs text-blue-200">1 step remaining before public traffic</span>
+            </div>
+            <h3 className="text-base font-bold text-white mt-1">
+              Storefront &amp; Omnichannel Go-Live Checklist
+            </h3>
+            <p className="text-xs text-blue-200/80 mt-0.5">
+              Enterprise setup steps to maximize customer conversions and guarantee 24/7 automated support.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenEmbed && (
+              <button
+                onClick={onOpenEmbed}
+                className="px-3.5 py-2 bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                <span>Get Embed Code</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 4 Interactive Steps */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+          <div
+            onClick={() => onNavigate?.(17)}
+            className="p-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Step 1</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            </div>
+            <h4 className="text-xs font-bold text-white mt-1">Connect Store &amp; Sync</h4>
+            <p className="text-[11px] text-blue-200/70 mt-0.5">Shopify, Woo &amp; GHL connected</p>
+          </div>
+
+          <div
+            onClick={() => onNavigate?.(9)}
+            className="p-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Step 2</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            </div>
+            <h4 className="text-xs font-bold text-white mt-1">Train Knowledge Base</h4>
+            <p className="text-[11px] text-blue-200/70 mt-0.5">Vector RAG embeddings loaded</p>
+          </div>
+
+          <div
+            onClick={() => onNavigate?.(12)}
+            className="p-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl transition-all cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Step 3</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            </div>
+            <h4 className="text-xs font-bold text-white mt-1">Configure AI Guardrails</h4>
+            <p className="text-[11px] text-blue-200/70 mt-0.5">Discounts &amp; tone configured</p>
+          </div>
+
+          <div
+            onClick={() => onOpenEmbed ? onOpenEmbed() : onNavigate?.(13)}
+            className="p-3 bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/50 rounded-xl transition-all cursor-pointer ring-2 ring-blue-400/30"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Step 4 (Final)</span>
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            </div>
+            <h4 className="text-xs font-bold text-white mt-1">Deploy Widget Script</h4>
+            <p className="text-[11px] text-blue-100 mt-0.5 flex items-center gap-1 font-medium">
+              <span>Click to copy 1-line tag</span>
+              <ArrowRight className="w-3 h-3" />
+            </p>
           </div>
         </div>
       </div>
