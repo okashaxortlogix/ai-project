@@ -24,7 +24,8 @@ import {
   RefreshCw,
   Check,
   ChevronDown,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import Modal from "./ui/Modal";
 import Button from "./ui/Button";
@@ -423,6 +424,30 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
     }
   };
 
+  const handleExportTranscript = () => {
+    if (!selectedConv) return;
+    const lines = [
+      `=====================================================`,
+      `CONVERSATION TRANSCRIPT: ${selectedConv.customer}`,
+      `Email: ${selectedConv.email || "N/A"}`,
+      `Channel: ${selectedConv.channel || "Web Chat"}`,
+      `Assigned Agent: ${selectedConv.agentLabel || selectedConv.agent}`,
+      `Status: ${selectedConv.status}`,
+      `Export Date: ${new Date().toLocaleString()}`,
+      `=====================================================\n`
+    ];
+    selectedConv.transcript.forEach((msg) => {
+      lines.push(`[${msg.time}] ${msg.sender.toUpperCase()}: ${msg.text}`);
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `transcript-${selectedConv.customer.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleVoiceInput = () => {
     if (isListening) {
       stopSpeechRecognition();
@@ -731,6 +756,10 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                       >
                         {selectedConv.agentLabel}
                       </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Positive Sentiment
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
                       <span className="flex items-center gap-1">
@@ -779,6 +808,16 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="hidden sm:inline">Resolve</span>
+                  </button>
+
+                  {/* Export Transcript */}
+                  <button
+                    onClick={handleExportTranscript}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+                    title="Export transcript as text file"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">Export</span>
                   </button>
 
                   {/* Delete Conversation */}
