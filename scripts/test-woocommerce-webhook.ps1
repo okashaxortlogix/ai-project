@@ -33,7 +33,7 @@ Write-Host "=================================================================" -
 
 # Test 1: Reject request missing signature header
 try {
-    $res1 = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/woocommerce/webhook" -Method Post -Body $payload -ContentType "application/json"
+    $null = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/woocommerce/webhook" -Method Post -Body $payload -ContentType "application/json"
     Write-Host "[FAIL] Missing signature header accepted" -ForegroundColor Red
 } catch {
     Write-Host "[PASS] Missing signature header correctly returned 401 Unauthorized" -ForegroundColor Green
@@ -42,7 +42,7 @@ try {
 # Test 2: Reject request with invalid signature
 try {
     $headers2 = @{ "X-WC-Webhook-Signature" = "invalid_signature_hash==" }
-    $res2 = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/woocommerce/webhook" -Method Post -Body $payload -ContentType "application/json" -Headers $headers2
+    $null = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/woocommerce/webhook" -Method Post -Body $payload -ContentType "application/json" -Headers $headers2
     Write-Host "[FAIL] Invalid signature accepted" -ForegroundColor Red
 } catch {
     Write-Host "[PASS] Invalid HMAC signature correctly rejected with 401 Unauthorized" -ForegroundColor Green

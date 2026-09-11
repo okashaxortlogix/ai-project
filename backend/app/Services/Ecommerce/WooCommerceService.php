@@ -4,6 +4,8 @@ namespace App\Services\Ecommerce;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use function config;
+use function env;
 use Exception;
 
 class WooCommerceService

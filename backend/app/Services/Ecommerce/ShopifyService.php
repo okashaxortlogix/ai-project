@@ -4,6 +4,8 @@ namespace App\Services\Ecommerce;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use function config;
+use function env;
 use Exception;
 
 class ShopifyService
@@ -59,7 +61,7 @@ class ShopifyService
     /**
      * Get single product by ID
      */
-    public function getProduct($id): array
+    public function getProduct(int|string $id): array
     {
         $res = $this->sendRequest('get', "products/{$id}.json");
         return $res['product'] ?? $res;
@@ -107,7 +109,7 @@ class ShopifyService
     /**
      * Get single order by ID
      */
-    public function getOrder($id): array
+    public function getOrder(int|string $id): array
     {
         $res = $this->sendRequest('get', "orders/{$id}.json");
         return $res['order'] ?? $res;

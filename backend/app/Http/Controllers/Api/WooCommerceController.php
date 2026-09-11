@@ -7,6 +7,9 @@ use App\Services\Ecommerce\WooCommerceService;
 use App\Services\Ecommerce\ShopifyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use function response;
+use function config;
+use function env;
 use Exception;
 
 class WooCommerceController extends Controller
@@ -54,7 +57,7 @@ class WooCommerceController extends Controller
     /**
      * Fetch single product by ID
      */
-    public function getProduct($id)
+    public function getProduct(int|string $id)
     {
         try {
             $product = $this->wooService->getProduct((int)$id);
@@ -125,7 +128,7 @@ class WooCommerceController extends Controller
     /**
      * Fetch single order by ID
      */
-    public function getOrder($id)
+    public function getOrder(int|string $id)
     {
         try {
             $order = $this->wooService->getOrder((int)$id);

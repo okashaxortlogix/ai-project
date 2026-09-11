@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\Ecommerce\ShopifyService;
 use Illuminate\Http\Request;
+use function response;
 use Exception;
 
 class ShopifyController extends Controller
@@ -50,7 +51,7 @@ class ShopifyController extends Controller
     /**
      * Fetch single product by ID
      */
-    public function getProduct($id)
+    public function getProduct(int|string $id)
     {
         try {
             $product = $this->shopifyService->getProduct($id);
@@ -122,7 +123,7 @@ class ShopifyController extends Controller
     /**
      * Fetch single order by ID
      */
-    public function getOrder($id)
+    public function getOrder(int|string $id)
     {
         try {
             $order = $this->shopifyService->getOrder($id);
