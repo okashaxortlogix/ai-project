@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\WooCommerceController;
+use App\Http\Controllers\Api\ShopifyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +96,49 @@ Route::prefix('v1')->group(function () {
         Route::get('/analytics/leads', [AnalyticsController::class, 'leads']);
         Route::get('/analytics/appointments', [AnalyticsController::class, 'appointments']);
         Route::get('/usage', [AnalyticsController::class, 'usage']);
+
+        // WooCommerce E-Commerce Endpoints
+        Route::prefix('woocommerce')->group(function () {
+            Route::get('/status', [WooCommerceController::class, 'status']);
+            Route::get('/products', [WooCommerceController::class, 'getProducts']);
+            Route::post('/products', [WooCommerceController::class, 'createProduct']);
+            Route::get('/products/{id}', [WooCommerceController::class, 'getProduct']);
+            Route::get('/orders', [WooCommerceController::class, 'getOrders']);
+            Route::post('/orders', [WooCommerceController::class, 'createOrder']);
+            Route::get('/orders/{id}', [WooCommerceController::class, 'getOrder']);
+        });
+
+        // Shopify E-Commerce Endpoints
+        Route::prefix('shopify')->group(function () {
+            Route::get('/status', [ShopifyController::class, 'status']);
+            Route::get('/products', [ShopifyController::class, 'getProducts']);
+            Route::post('/products', [ShopifyController::class, 'createProduct']);
+            Route::get('/products/{id}', [ShopifyController::class, 'getProduct']);
+            Route::get('/orders', [ShopifyController::class, 'getOrders']);
+            Route::post('/orders', [ShopifyController::class, 'createOrder']);
+            Route::get('/orders/{id}', [ShopifyController::class, 'getOrder']);
+        });
+    });
+
+    // Public / Direct Test E-Commerce Endpoints
+    Route::prefix('woocommerce')->group(function () {
+        Route::get('/status', [WooCommerceController::class, 'status']);
+        Route::get('/products', [WooCommerceController::class, 'getProducts']);
+        Route::post('/products', [WooCommerceController::class, 'createProduct']);
+        Route::get('/products/{id}', [WooCommerceController::class, 'getProduct']);
+        Route::get('/orders', [WooCommerceController::class, 'getOrders']);
+        Route::post('/orders', [WooCommerceController::class, 'createOrder']);
+        Route::get('/orders/{id}', [WooCommerceController::class, 'getOrder']);
+    });
+
+    Route::prefix('shopify')->group(function () {
+        Route::get('/status', [ShopifyController::class, 'status']);
+        Route::get('/products', [ShopifyController::class, 'getProducts']);
+        Route::post('/products', [ShopifyController::class, 'createProduct']);
+        Route::get('/products/{id}', [ShopifyController::class, 'getProduct']);
+        Route::get('/orders', [ShopifyController::class, 'getOrders']);
+        Route::post('/orders', [ShopifyController::class, 'createOrder']);
+        Route::get('/orders/{id}', [ShopifyController::class, 'getOrder']);
     });
 
     // Webhooks

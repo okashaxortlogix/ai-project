@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Database } from "@/lib/db";
 import { GoogleCalendarClient } from "@/lib/integrations/google-calendar";
 import { ShopifyClient } from "@/lib/integrations/shopify";
+import { WooCommerceClient } from "@/lib/integrations/woocommerce";
 import { HubSpotClient } from "@/lib/integrations/hubspot";
 
 export async function POST(
@@ -25,6 +26,9 @@ export async function POST(
       testResult = await client.testConnection();
     } else if (provider === "shopify") {
       const client = new ShopifyClient(body);
+      testResult = await client.testConnection();
+    } else if (provider === "woocommerce") {
+      const client = new WooCommerceClient(body);
       testResult = await client.testConnection();
     } else if (provider === "hubspot") {
       const client = new HubSpotClient(body);
