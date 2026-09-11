@@ -105,6 +105,13 @@ namespace Illuminate\Foundation {
         public function withMiddleware(callable $callback): self { return $this; }
         public function withExceptions(callable $callback): self { return $this; }
         public function create(): self { return $this; }
+        public function handleCommand(mixed $input = null): int { return 0; }
+    }
+}
+
+namespace Symfony\Component\Console\Input {
+    class ArgvInput {
+        public function __construct(?array $argv = null, mixed $definition = null) {}
     }
 }
 

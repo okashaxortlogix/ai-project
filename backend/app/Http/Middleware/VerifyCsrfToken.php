@@ -11,7 +11,7 @@ class VerifyCsrfToken extends Middleware
      *
      * @var array<int, string>
      */
-    protected $except = [
+    protected array $except = [
         'api/v1/woocommerce/webhook',
         'api/v1/shopify/webhook',
         'api/v1/webhooks/*',
