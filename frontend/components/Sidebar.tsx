@@ -41,8 +41,8 @@ export default function Sidebar({
 }: SidebarProps) {
   const primaryNav = [
     { id: 2, label: "Home", icon: Home },
-    { id: 3, label: "Conversations", icon: MessageSquare, badge: "6" },
-    { id: 18, label: "Pipelines & Deals", icon: Kanban, badge: "$105k" },
+    { id: 3, label: "Conversations", icon: MessageSquare },
+    { id: 18, label: "Pipelines & Deals", icon: Kanban },
     { id: 19, label: "Workflows", icon: Workflow, badge: "Auto" },
     { id: 7, label: "Contacts & Leads", icon: Users },
     { id: 20, label: "Tasks & Companies", icon: CheckSquare },

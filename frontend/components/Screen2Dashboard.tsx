@@ -45,46 +45,17 @@ export default function Screen2Dashboard({
 }: Screen2DashboardProps) {
   const [dateFilter, setDateFilter] = useState("Today");
   const [metrics, setMetrics] = useState({
-    conversations: 24,
-    conversations_trend: "+12% from yesterday",
-    orders: 8,
-    orders_trend: "+33% from yesterday",
-    appointments: 5,
-    appointments_trend: "+20% from yesterday",
+    conversations: 0,
+    conversations_trend: "Live sync active",
+    orders: 0,
+    orders_trend: "Store sync active",
+    appointments: 0,
+    appointments_trend: "0 booked today",
     active_agents: 3,
     agents_status: "All systems running"
   });
 
-  const [activities, setActivities] = useState<any[]>([
-    {
-      id: 1,
-      title: "New appointment booked",
-      subtitle: "Dental Consultation with Sarah Ahmed",
-      time: "2 min ago",
-      type: "appointment"
-    },
-    {
-      id: 2,
-      title: "Support ticket resolved",
-      subtitle: "Order #2456 marked resolved by Support Bot",
-      time: "12 min ago",
-      type: "support"
-    },
-    {
-      id: 3,
-      title: "New order received",
-      subtitle: "Order #12345 synced to Shopify & WooCommerce",
-      time: "25 min ago",
-      type: "order"
-    },
-    {
-      id: 4,
-      title: "Conversation started",
-      subtitle: "Lead captured from website webchat",
-      time: "45 min ago",
-      type: "lead"
-    }
-  ]);
+  const [activities, setActivities] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -99,8 +70,8 @@ export default function Screen2Dashboard({
           const m = analyticsRes.value.data.metrics;
           setMetrics((prev) => ({
             ...prev,
-            conversations: m.conversations || prev.conversations,
-            appointments: m.appointments || prev.appointments
+            conversations: m.conversations ?? prev.conversations,
+            appointments: m.appointments ?? prev.appointments
           }));
         }
 
@@ -463,28 +434,34 @@ export default function Screen2Dashboard({
           </div>
 
           <div className="divide-y divide-slate-100">
-            {activities.map((act) => (
-              <div
-                key={act.id}
-                className="py-3 flex items-start justify-between gap-3 hover:bg-slate-50/70 rounded-lg px-2 transition-colors cursor-pointer"
-                onClick={() => onNavigate?.(3)}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  <div>
-                    <h5 className="text-xs font-bold text-slate-800">
-                      {act.title}
-                    </h5>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {act.subtitle}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[11px] text-slate-400 font-medium shrink-0">
-                  {act.time}
-                </span>
+            {activities.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                No recent activity yet. New appointments, chats, and orders will appear here automatically.
               </div>
-            ))}
+            ) : (
+              activities.map((act) => (
+                <div
+                  key={act.id}
+                  className="py-3 flex items-start justify-between gap-3 hover:bg-slate-50/70 rounded-lg px-2 transition-colors cursor-pointer"
+                  onClick={() => onNavigate?.(3)}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <div>
+                      <h5 className="text-xs font-bold text-slate-800">
+                        {act.title}
+                      </h5>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {act.subtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium shrink-0">
+                    {act.time}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

@@ -71,7 +71,7 @@ function formatDisplayTime(rawTime: any): string {
 
 export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
   const [activeTab, setActiveTab] = useState<"all" | "support" | "sales" | "appointment" | "human">("all");
-  const [selectedId, setSelectedId] = useState<string>("conv-1");
+  const [selectedId, setSelectedId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -111,116 +111,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
       }>;
       orderContext: any;
     }>
-  >([
-    {
-      id: "conv-1",
-      customer: "Sarah Johnson",
-      email: "sarah@company.com",
-      phone: "+1 (555) 234-8901",
-      message: "Transferred to representative",
-      agent: "human",
-      agentLabel: "Human",
-      time: "10:34 AM",
-      status: "human",
-      channel: "Web Chat",
-      transcript: [
-        { sender: "customer", text: "I need to discuss enterprise billing with a senior manager.", time: "10:24 AM" },
-        { sender: "agent", text: "I'd be glad to help! Let me pull up your account records.", time: "10:25 AM" },
-        { sender: "system", text: "Conversation prioritized and handed off to human support queue.", time: "10:26 AM" }
-      ],
-      orderContext: null
-    },
-    {
-      id: "conv-2",
-      customer: "Mike Wilson",
-      email: "mike.wilson@example.com",
-      phone: "+1 (555) 345-9012",
-      message: "Let me check that for you. I found your order #54321...",
-      agent: "support",
-      agentLabel: "Support",
-      time: "10:18 AM",
-      status: "active",
-      channel: "Shopify Store",
-      transcript: [
-        { sender: "customer", text: "Where is my order #54321?", time: "10:15 AM" },
-        { sender: "agent", text: "Let me check that for you. I found your order #54321. It's currently Out for Delivery and is expected to arrive Tomorrow with FedEx Express.", time: "10:16 AM" }
-      ],
-      orderContext: {
-        orderNumber: "#54321",
-        status: "Out for Delivery",
-        estimated: "Tomorrow by 2:00 PM",
-        carrier: "FedEx Express (Tracking: #FDX-994821)"
-      }
-    },
-    {
-      id: "conv-3",
-      customer: "Emma Davis",
-      email: "emma@company.com",
-      phone: "+1 (555) 456-0123",
-      message: "Perfect! Your demo has been scheduled for tomorrow at 10:00 AM...",
-      agent: "appointment",
-      agentLabel: "Appointment",
-      time: "09:50 AM",
-      status: "active",
-      channel: "Website",
-      transcript: [
-        { sender: "customer", text: "Can we schedule a 15-minute product walkthrough tomorrow?", time: "09:48 AM" },
-        { sender: "agent", text: "Perfect! Your demo has been scheduled for tomorrow at 10:00 AM. Synced automatically with Google Calendar.", time: "09:49 AM" }
-      ],
-      orderContext: null
-    },
-    {
-      id: "conv-4",
-      customer: "James Miller",
-      email: "james@company.com",
-      phone: "+1 (555) 567-1234",
-      message: "I have prioritized your request and transferred to a senior representative.",
-      agent: "human",
-      agentLabel: "Human",
-      time: "09:22 AM",
-      status: "human",
-      channel: "WhatsApp",
-      transcript: [
-        { sender: "customer", text: "Can someone call me regarding a custom enterprise agreement?", time: "09:20 AM" },
-        { sender: "system", text: "Transferred to senior human representative queue.", time: "09:21 AM" }
-      ],
-      orderContext: null
-    },
-    {
-      id: "conv-5",
-      customer: "Olivia Brown",
-      email: "olivia@company.com",
-      phone: "+1 (555) 678-2345",
-      message: "Conversation handed off to human support queue.",
-      agent: "sales",
-      agentLabel: "Sales",
-      time: "08:55 AM",
-      status: "active",
-      channel: "Web Chat",
-      transcript: [
-        { sender: "customer", text: "What discount do you offer on 15 MacBooks and 20 Dells?", time: "08:52 AM" },
-        { sender: "agent", text: "For a bulk enterprise order of 35 machines ($26,965 total), our automated enterprise tier qualifies for a 15% discount ($4,044.75 savings), bringing your quote to $22,920.25!", time: "08:53 AM" }
-      ],
-      orderContext: null
-    },
-    {
-      id: "conv-6",
-      customer: "Daniel Taylor",
-      email: "daniel@company.com",
-      phone: "+1 (555) 789-3456",
-      message: "I need help with my account setup...",
-      agent: "support",
-      agentLabel: "Support",
-      time: "08:30 AM",
-      status: "active",
-      channel: "Web Chat",
-      transcript: [
-        { sender: "customer", text: "I need help with my account setup and domain DNS.", time: "08:28 AM" },
-        { sender: "agent", text: "I'd be happy to assist. Have you added your CNAME record pointing to cname.nexa-proxy.net?", time: "08:29 AM" }
-      ],
-      orderContext: null
-    }
-  ]);
+  >([]);
 
   useEffect(() => {
     setSpeechSupported(isSpeechRecognitionSupported());
@@ -230,32 +121,37 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
     async function loadConversations() {
       try {
         const res = await api.getConversations();
-        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-          const mapped = res.data.map((item: any) => ({
-            id: item.id,
-            customer: item.customer?.name || "Customer",
-            email: item.customer?.email || "customer@example.com",
-            phone: item.customer?.phone || "+1 (555) 019-2831",
-            message: item.last_message || "Active conversation",
-            agent: item.assigned_agent || "support",
-            agentLabel: (item.assigned_agent || "Support").charAt(0).toUpperCase() + (item.assigned_agent || "support").slice(1),
-            time: formatDisplayTime(item.last_message_at || item.updated_at || item.created_at),
-            status: item.status || "active",
-            channel: item.channel === "whatsapp" ? "WhatsApp" : item.channel === "sms" ? "SMS" : "Web Chat",
-            transcript: item.messages?.map((m: any) => ({
-              sender: m.sender === "customer" ? "customer" : m.sender === "system" ? "system" : "agent",
-              text: m.content,
-              time: formatDisplayTime(m.timestamp)
-            })) || [
-              { sender: "customer", text: item.last_message || "Hello!", time: "Just now" }
-            ],
-            orderContext: item.orderContext || null
-          }));
-          setConversationList(mapped);
-          if (mapped[0]) setSelectedId(mapped[0].id);
+        if (res?.success && Array.isArray(res.data)) {
+          if (res.data.length > 0) {
+            const mapped = res.data.map((item: any) => ({
+              id: item.id,
+              customer: item.customer?.name || "Customer",
+              email: item.customer?.email || "customer@example.com",
+              phone: item.customer?.phone || "+1 (555) 019-2831",
+              message: item.last_message || "Active conversation",
+              agent: item.assigned_agent || "support",
+              agentLabel: (item.assigned_agent || "Support").charAt(0).toUpperCase() + (item.assigned_agent || "support").slice(1),
+              time: formatDisplayTime(item.last_message_at || item.updated_at || item.created_at),
+              status: item.status || "active",
+              channel: item.channel === "whatsapp" ? "WhatsApp" : item.channel === "sms" ? "SMS" : "Web Chat",
+              transcript: item.messages?.map((m: any) => ({
+                sender: m.sender === "customer" ? "customer" : m.sender === "system" ? "system" : "agent",
+                text: m.content,
+                time: formatDisplayTime(m.timestamp)
+              })) || [
+                { sender: "customer", text: item.last_message || "Hello!", time: "Just now" }
+              ],
+              orderContext: item.orderContext || null
+            }));
+            setConversationList(mapped);
+            if (mapped[0]) setSelectedId(mapped[0].id);
+          } else {
+            setConversationList([]);
+            setSelectedId("");
+          }
         }
       } catch (e) {
-        console.warn("Could not load backend conversations, using initial list", e);
+        console.warn("Could not load backend conversations", e);
       }
     }
     loadConversations();
@@ -268,7 +164,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
   }, []);
 
   const selectedConv =
-    conversationList.find((c) => c.id === selectedId) || conversationList[0];
+    conversationList.find((c) => c.id === selectedId) || null;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
