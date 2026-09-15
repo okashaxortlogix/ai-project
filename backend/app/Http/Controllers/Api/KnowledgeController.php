@@ -54,15 +54,17 @@ class KnowledgeController extends Controller
         return response()->json(['success' => true, 'data' => $doc], 201);
     }
 
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $doc = KnowledgeDocument::findOrFail($id);
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $doc = KnowledgeDocument::where('organization_id', $orgId)->findOrFail($id);
         return response()->json(['success' => true, 'data' => $doc]);
     }
 
     public function update(Request $request, string $id)
     {
-        $doc = KnowledgeDocument::findOrFail($id);
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $doc = KnowledgeDocument::where('organization_id', $orgId)->findOrFail($id);
         $validated = $request->validate([
             'title' => 'nullable|string',
             'type' => 'nullable|string',
@@ -80,9 +82,10 @@ class KnowledgeController extends Controller
         return response()->json(['success' => true, 'data' => $doc]);
     }
 
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $doc = KnowledgeDocument::findOrFail($id);
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $doc = KnowledgeDocument::where('organization_id', $orgId)->findOrFail($id);
         $doc->delete();
 
         return response()->json([
@@ -91,26 +94,34 @@ class KnowledgeController extends Controller
         ]);
     }
 
-    public function reindex(string $id)
+    public function reindex(Request $request, string $id)
     {
-        $doc = KnowledgeDocument::findOrFail($id);
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $doc = KnowledgeDocument::where('organization_id', $orgId)->findOrFail($id);
         $rag = new RAGService();
         $rag->indexDocument($doc);
 
         return response()->json([
             'success' => true,
-            'message' => "Document {$doc->title} successfully reindexed."
+            'data' => $doc
         ]);
     }
 
     public function semanticQuery(Request $request)
     {
-        $validated = $request->validate(['query' => 'required|string']);
-        $orgId = $request->header('X-Organization-Id', 'org-acme-1');
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $validated = $request->validate([
+            'query' => 'required|string',
+            'limit' => 'nullable|integer'
+        ]);
 
         $rag = new RAGService();
-        $result = $rag->search($orgId, $validated['query']);
+        $results = $rag->search($orgId, $validated['query'], $validated['limit'] ?? 4);
 
-        return response()->json(['success' => true, 'data' => $result]);
+        return response()->json([
+            'success' => true,
+            'data' => $results,
+            'results' => $results
+        ]);
     }
 }

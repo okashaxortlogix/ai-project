@@ -75,21 +75,9 @@ export default function Screen1Auth({ onSuccess, isCompact = false }: Screen1Aut
     setLoading(true);
     setErrorMsg(null);
     try {
-      const oauthEmail = `${provider.toLowerCase()}@acme.com`;
-      const res = await api.login(oauthEmail, "secret123");
-      if (res && (res.success || res.token)) {
-        if (res.token) localStorage.setItem("auth_token", res.token);
-        if (res.user) {
-          localStorage.setItem("user", JSON.stringify(res.user));
-          if (res.user.organization_id) localStorage.setItem("organization_id", res.user.organization_id);
-        }
-        setAuthSuccess(true);
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 500);
-      }
-    } catch (e: any) {
-      setErrorMsg(`Failed to authenticate with ${provider}.`);
+      // In production, initiate OAuth 2.0 redirect handshake
+      // If client ID is unconfigured, display actionable notice without fake credential bypass
+      setErrorMsg(`${provider} Single Sign-On requires OAuth client credentials configured in your tenant integration settings. Please authenticate using your corporate email and password.`);
     } finally {
       setLoading(false);
     }

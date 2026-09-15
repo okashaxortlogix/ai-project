@@ -15,7 +15,7 @@ class ConversationController extends Controller
 {
     public function index(Request $request)
     {
-        $orgId = $request->header('X-Organization-Id', 'org-acme-1');
+        $orgId = $request->user()?->organization_id ?? $request->header('X-Organization-Id');
         $query = Conversation::where('organization_id', $orgId)->with(['customer', 'messages']);
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -36,20 +36,28 @@ class ConversationController extends Controller
 
     public function store(Request $request)
     {
-        $orgId = $request->header('X-Organization-Id', 'org-acme-1');
-        $validated = $request->validate([
-            'customer_id' => 'required|string',
-            'channel' => 'nullable|string',
-            'assigned_agent' => 'nullable|string'
-        ]);
+        $orgId = $request->user()?->organization_id ?? $request->header('X-Organization-Id');
+        
+        $customerId = $request->input('customer_id');
+        if (!$customerId || !Str::isUuid($customerId) || !Customer::where('id', $customerId)->exists()) {
+            $customer = Customer::firstOrCreate(
+                ['organization_id' => $orgId, 'email' => 'guest-' . substr($orgId, 0, 8) . '@example.com'],
+                [
+                    'id' => (string) Str::uuid(),
+                    'name' => 'Web Customer',
+                    'channel' => 'web'
+                ]
+            );
+            $customerId = $customer->id;
+        }
 
         $conv = Conversation::create([
             'id' => (string) Str::uuid(),
             'organization_id' => $orgId,
-            'customer_id' => $validated['customer_id'],
-            'channel' => $validated['channel'] ?? 'web',
+            'customer_id' => $customerId,
+            'channel' => $request->input('channel', 'web_chat'),
             'status' => 'active',
-            'assigned_agent' => $validated['assigned_agent'] ?? 'support',
+            'assigned_agent' => $request->input('assigned_agent', 'support'),
             'last_message' => 'Conversation initialized',
             'last_message_at' => now(),
         ]);
@@ -57,26 +65,30 @@ class ConversationController extends Controller
         return response()->json(['success' => true, 'data' => $conv], 201);
     }
 
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $conv = Conversation::with(['customer', 'messages'])->findOrFail($id);
+        $orgId = $request->user()->organization_id;
+        $conv = Conversation::where('organization_id', $orgId)->with(['customer', 'messages'])->findOrFail($id);
         return response()->json(['success' => true, 'data' => $conv]);
     }
 
-    public function messages(string $id)
+    public function messages(Request $request, string $id)
     {
-        $messages = Message::where('conversation_id', $id)->orderBy('created_at', 'asc')->get();
+        $orgId = $request->user()->organization_id;
+        $conv = Conversation::where('organization_id', $orgId)->findOrFail($id);
+        $messages = Message::where('conversation_id', $conv->id)->where('organization_id', $orgId)->orderBy('created_at', 'asc')->get();
         return response()->json(['success' => true, 'data' => $messages]);
     }
 
     public function sendMessage(Request $request, string $id)
     {
+        $orgId = $request->user()->organization_id;
         $validated = $request->validate([
             'content' => 'required|string',
             'sender' => 'nullable|string'
         ]);
 
-        $conv = Conversation::with('customer')->findOrFail($id);
+        $conv = Conversation::where('organization_id', $orgId)->with('customer')->findOrFail($id);
         $sender = $validated['sender'] ?? 'customer';
 
         // 1. Store Customer Message with unique UUID
@@ -91,65 +103,31 @@ class ConversationController extends Controller
             'timestamp' => now()->format('h:i A')
         ]);
 
-        // 2. AI Orchestrator Execution
+        // 2. AI Orchestrator Execution with Live Tool Calling
         $router = new AgentRouter();
         $agent = $router->route($conv, $validated['content']);
-        $intent = $router->detectIntent($validated['content']);
 
-        // Contextual RAG grounding
-        $rag = new \App\Services\Knowledge\RAGService();
-        $ragChunks = $rag->search($conv->organization_id, $validated['content']);
-        $ragGrounding = !empty($ragChunks) ? $ragChunks[0]['chunk'] : null;
-
-        $reply = "I'm happy to help you with that! As your {$agent->name}, I can assist with product recommendations, order tracking, and scheduling.";
-        if ($intent === 'appointment') {
-            $reply = "I'd be glad to schedule an appointment for you! We have openings tomorrow at 10:00 AM, 11:30 AM, and 2:00 PM. Which time works best for you?";
-        } elseif ($intent === 'sales') {
-            $reply = "Great question! Our top-rated models are the MacBook Air M1 ($799) and Dell Inspiron 15 ($749). Both include free express shipping and warranty. Would you like to reserve one or discuss special discount packages?";
-        } elseif ($intent === 'support') {
-            if ($ragGrounding) {
-                $reply = $ragGrounding . " Let me know if you would like me to look up tracking details for a specific order!";
-            } else {
-                $reply = "I can help track your order, process returns, or resolve any delivery issues. Please provide your order number!";
-            }
-        } elseif ($intent === 'human_request') {
-            $reply = "I understand. I have prioritized your request and transferred your conversation to our senior human representative. Someone will reply shortly.";
-        }
+        $orchestrator = new \App\Services\AI\LlmOrchestratorService();
+        $aiResult = $orchestrator->processMessage(
+            $conv->organization_id,
+            $conv->id,
+            $validated['content'],
+            $agent->type ?? 'assistant',
+            $custMsg->sender
+        );
 
         $aiResponse = [
-            'reply' => $reply,
-            'agent_type' => $agent->type ?? 'support',
+            'reply' => $aiResult['reply'],
+            'agent_type' => $aiResult['agent_type'],
             'agent_name' => $agent->name ?? 'AI Assistant',
-            'tool_executed' => null,
-            'grounded_source' => !empty($ragChunks) ? $ragChunks[0]['source'] : null,
+            'tool_executed' => $aiResult['tool_executed'],
+            'grounded_source' => $aiResult['grounded_source'],
         ];
 
-        // 3. Store Agent Message with unique UUID
-        $agentMsg = Message::create([
-            'id' => (string) Str::uuid(),
-            'organization_id' => $conv->organization_id,
-            'conversation_id' => $conv->id,
-            'sender_type' => 'agent',
-            'sender' => 'agent',
-            'agent_type' => $aiResponse['agent_type'] ?? 'support',
-            'content' => $aiResponse['reply'],
-            'content_type' => 'text',
-            'timestamp' => now()->format('h:i A'),
-            'metadata' => [
-                'toolExecuted' => $aiResponse['tool_executed'] ?? null,
-                'groundedSource' => $aiResponse['grounded_source'] ?? null
-            ],
-            'metadata_json' => [
-                'toolExecuted' => $aiResponse['tool_executed'] ?? null,
-                'groundedSource' => $aiResponse['grounded_source'] ?? null
-            ]
-        ]);
-
-        $conv->update([
-            'last_message' => $aiResponse['reply'],
-            'last_message_at' => now(),
-            'assigned_agent' => $aiResponse['agent_type'] ?? $conv->assigned_agent
-        ]);
+        $agentMsg = Message::where('conversation_id', $conv->id)
+            ->where('sender_type', 'agent')
+            ->latest('created_at')
+            ->first();
 
         return response()->json([
             'success' => true,
@@ -161,9 +139,10 @@ class ConversationController extends Controller
         ]);
     }
 
-    public function handoff(string $id)
+    public function handoff(Request $request, string $id)
     {
-        $conv = Conversation::findOrFail($id);
+        $orgId = $request->user()->organization_id;
+        $conv = Conversation::where('organization_id', $orgId)->findOrFail($id);
         $conv->update([
             'status' => 'waiting_for_human',
             'assigned_agent' => 'human'
@@ -183,9 +162,10 @@ class ConversationController extends Controller
         return response()->json(['success' => true, 'data' => $conv]);
     }
 
-    public function resolve(string $id)
+    public function resolve(Request $request, string $id)
     {
-        $conv = Conversation::findOrFail($id);
+        $orgId = $request->user()->organization_id;
+        $conv = Conversation::where('organization_id', $orgId)->findOrFail($id);
         $conv->update([
             'status' => 'resolved',
             'resolved_at' => now()

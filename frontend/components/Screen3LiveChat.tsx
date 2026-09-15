@@ -26,11 +26,13 @@ import {
   ChevronDown,
   Trash2,
   Download,
-  ChevronLeft
+  ChevronLeft,
+  Users
 } from "lucide-react";
 import Modal from "./ui/Modal";
 import Button from "./ui/Button";
 import StatusBadge from "./ui/StatusBadge";
+import Contact360Drawer from "./Contact360Drawer";
 import { api } from "@/lib/api";
 import { streamMessageText } from "@/lib/chat-stream";
 import { playMessageChime } from "@/lib/audio";
@@ -78,6 +80,7 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
   const [speechSupported, setSpeechSupported] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const [mobilePane, setMobilePane] = useState<"list" | "chat">("list");
+  const [isContact360Open, setIsContact360Open] = useState(false);
 
   // New Chat Form
   const [newChatName, setNewChatName] = useState("");
@@ -256,6 +259,12 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
       }
     }
     loadConversations();
+
+    const handleTenantChange = () => {
+      loadConversations();
+    };
+    window.addEventListener("tenantChanged", handleTenantChange);
+    return () => window.removeEventListener("tenantChanged", handleTenantChange);
   }, []);
 
   const selectedConv =
@@ -786,6 +795,16 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
 
                 {/* Right: Quick Action Controls */}
                 <div className="flex items-center gap-2">
+                  {/* Contact 360 Workspace Drawer */}
+                  <button
+                    onClick={() => setIsContact360Open(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg shadow-2xs transition-colors cursor-pointer"
+                    title="Open Full Contact 360 CRM Workspace"
+                  >
+                    <Users className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="hidden sm:inline">Contact 360</span>
+                  </button>
+
                   {/* Human Takeover Toggle */}
                   <button
                     onClick={handleToggleHandoff}
@@ -1179,6 +1198,14 @@ export default function Screen3LiveChat({ onNavigate }: Screen3LiveChatProps) {
           Are you sure you want to delete this conversation? All chat messages and transcripts will be permanently erased. This action cannot be undone.
         </p>
       </Modal>
+
+      {/* GHL Contact 360 Workspace Drawer */}
+      <Contact360Drawer
+        contact={selectedConv ? { id: selectedConv.id, name: selectedConv.customer, email: selectedConv.email, phone: selectedConv.phone || "+1 234 567 8901", company: "Apex Global Logistics", tags: ["Hot Lead", "Inbound Chat"] } : null}
+        isOpen={isContact360Open}
+        onClose={() => setIsContact360Open(false)}
+        onNavigateScreen={onNavigate}
+      />
     </div>
   );
 }

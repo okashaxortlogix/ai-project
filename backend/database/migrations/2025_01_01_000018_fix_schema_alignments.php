@@ -142,6 +142,21 @@ return new class extends Migration
                 }
             });
         }
+
+        // 8. Align knowledge_chunks table
+        if (Schema::hasTable('knowledge_chunks')) {
+            Schema::table('knowledge_chunks', function (Blueprint $table) {
+                if (!Schema::hasColumn('knowledge_chunks', 'content')) {
+                    $table->mediumText('content')->nullable()->after('chunk_index');
+                }
+                if (!Schema::hasColumn('knowledge_chunks', 'embedding')) {
+                    $table->json('embedding')->nullable()->after('content');
+                }
+                if (!Schema::hasColumn('knowledge_chunks', 'metadata')) {
+                    $table->json('metadata')->nullable()->after('embedding');
+                }
+            });
+        }
     }
 
     public function down(): void

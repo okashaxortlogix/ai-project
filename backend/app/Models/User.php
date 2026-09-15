@@ -34,7 +34,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'password_hash',
         'role',
+        'status',
         'avatar',
         'is_active'
     ];
@@ -52,5 +54,30 @@ class User extends Authenticatable
     public function organization()
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /**
+     * Get the password for authentication.
+     */
+    public function getAuthPassword()
+    {
+        return $this->password ?? $this->password_hash;
+    }
+
+    /**
+     * Ensure password and password_hash stay synchronized.
+     */
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password'] = $value;
+        $this->attributes['password_hash'] = $value;
+    }
+
+    public function setPasswordHashAttribute($value)
+    {
+        $this->attributes['password_hash'] = $value;
+        if (empty($this->attributes['password'])) {
+            $this->attributes['password'] = $value;
+        }
     }
 }

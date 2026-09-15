@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
-import { X, ShoppingCart, Trash2, ArrowRight, ShieldCheck } from "lucide-react";
+import React, { useState } from "react";
+import { X, ShoppingCart, Trash2, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { Product } from "@/lib/data";
+import { api } from "@/lib/api";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -106,8 +107,20 @@ export default function CartDrawer({
             </div>
 
             <button
-              onClick={() => {
-                alert(`Order for $${subtotal.toFixed(2)} placed successfully! Confirmation email and invoice sent.`);
+              onClick={async () => {
+                try {
+                  await api.createOrder({
+                    total: subtotal,
+                    line_items: cartItems.map((item) => ({
+                      product_id: item.product.id,
+                      name: item.product.name,
+                      price: item.product.price,
+                      quantity: item.quantity
+                    }))
+                  });
+                } catch (e) {
+                  console.error("Order creation error:", e);
+                }
                 onClear();
                 onClose();
               }}

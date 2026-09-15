@@ -21,7 +21,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'woocommerce/webhook',
             'shopify/webhook',
         ]);
+
+        $middleware->alias([
+            'role' => \App\Http\Middleware\EnsureRole::class,
+            'tenant' => \App\Http\Middleware\TenantScope::class,
+        ]);
+
+        $middleware->api(append: [
+            \App\Http\Middleware\TenantScope::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->shouldRenderJsonWhen(function ($request, $e) {
+            return $request->is('api/*') || $request->expectsJson();
+        });
     })->create();

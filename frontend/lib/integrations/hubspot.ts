@@ -14,9 +14,8 @@ export class HubSpotClient {
   async testConnection(): Promise<{ connected: boolean; message: string; portalId?: string }> {
     if (!this.accessToken) {
       return {
-        connected: true,
-        message: "Connected to HubSpot CRM (Sandbox Mode). Two-way contact sync active.",
-        portalId: "portal_9812401"
+        connected: false,
+        message: "HubSpot CRM is not configured. Please provide an API token or connect via OAuth."
       };
     }
 

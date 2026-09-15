@@ -1,9 +1,10 @@
 // Typed Unified API Client connecting the UI to the real Backend REST APIs
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 function getHeaders(customHeaders: Record<string, string> = {}): HeadersInit {
   const headers: Record<string, string> = {
+    "Accept": "application/json",
     "Content-Type": "application/json",
     ...customHeaders,
   };
@@ -22,43 +23,131 @@ function getHeaders(customHeaders: Record<string, string> = {}): HeadersInit {
   return headers;
 }
 
+/**
+ * Safe fetch wrapper that handles:
+ * - JSON responses
+ * - Non-JSON / HTML redirects gracefully without throwing SyntaxError
+ * - 401 Unauthorized session expiration
+ * - 403, 404, 422 validation errors, and 500 server errors
+ * - Network failures
+ */
+async function safeRequest<T = any>(url: string, init: RequestInit = {}): Promise<any> {
+  try {
+    const customHeaders = (init.headers as Record<string, string>) || {};
+    const headers = getHeaders(customHeaders);
+
+    const res = await fetch(url, {
+      ...init,
+      headers,
+    });
+
+    const contentType = res.headers.get("content-type") || "";
+    let data: any = null;
+
+    if (contentType.includes("application/json")) {
+      try {
+        data = await res.json();
+      } catch {
+        data = { success: false, error: "Failed to parse JSON response." };
+      }
+    } else {
+      const text = await res.text().catch(() => "");
+      data = {
+        success: res.ok,
+        message: text.slice(0, 300) || res.statusText,
+        error: !res.ok ? (res.statusText || `HTTP ${res.status}`) : undefined,
+      };
+    }
+
+    if (res.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+      }
+      return {
+        success: false,
+        status: 401,
+        message: data?.message || "Unauthenticated session.",
+        error: "Unauthenticated",
+      };
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        status: res.status,
+        message: data?.message || `Request failed with HTTP ${res.status}`,
+        error: data?.error || data?.message || `HTTP ${res.status}`,
+        errors: data?.errors,
+        ...data,
+      };
+    }
+
+    return typeof data === "object" && data !== null ? data : { success: true, data };
+  } catch (err: any) {
+    return {
+      success: false,
+      status: 0,
+      message: err?.message || "Network communication failure.",
+      error: err?.message || "NetworkError",
+    };
+  }
+}
+
 export const api = {
+  // Organizations & Multi-tenancy
+  async getOrganizations() {
+    return safeRequest(`${API_BASE}/organizations`);
+  },
+
+  async createOrganization(name: string, slug?: string) {
+    return safeRequest(`${API_BASE}/organizations`, {
+      method: "POST",
+      body: JSON.stringify({ name, slug })
+    });
+  },
+
+  async updateOrganization(id: string, data: any) {
+    return safeRequest(`${API_BASE}/organizations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async deleteOrganization(id: string) {
+    return safeRequest(`${API_BASE}/organizations/${id}`, {
+      method: "DELETE"
+    });
+  },
+
   // Auth
   async login(email: string, password?: string) {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    return safeRequest(`${API_BASE}/auth/login`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify({ email, password })
     });
-    return res.json();
   },
 
   async register(data: { name: string; email: string; password: string; organization_name?: string }) {
-    const res = await fetch(`${API_BASE}/auth/register`, {
+    return safeRequest(`${API_BASE}/auth/register`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(data)
     });
-    return res.json();
   },
 
   async getMe() {
-    const res = await fetch(`${API_BASE}/auth/me`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/auth/me`);
   },
 
   async logout() {
-    const res = await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      headers: getHeaders()
+    const res = await safeRequest(`${API_BASE}/auth/logout`, {
+      method: "POST"
     });
     if (typeof window !== "undefined") {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
     }
-    return res.json();
+    return res;
   },
 
   // Conversations
@@ -66,66 +155,47 @@ export const api = {
     const params = new URLSearchParams();
     if (status && status !== "all") params.append("status", status);
     if (q) params.append("q", q);
-    const res = await fetch(`${API_BASE}/conversations?${params.toString()}`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/conversations?${params.toString()}`);
   },
 
   async createConversation(data: { customer_id: string; channel?: string; assigned_agent?: string }) {
-    const res = await fetch(`${API_BASE}/conversations`, {
+    return safeRequest(`${API_BASE}/conversations`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(data)
     });
-    return res.json();
   },
 
   async getConversation(id: string) {
-    const res = await fetch(`${API_BASE}/conversations/${id}`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/conversations/${id}`);
   },
 
   async getMessages(conversationId: string) {
-    const res = await fetch(`${API_BASE}/conversations/${conversationId}/messages`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/conversations/${conversationId}/messages`);
   },
 
   async sendMessage(conversationId: string, content: string, sender: string = "customer") {
-    const res = await fetch(`${API_BASE}/conversations/${conversationId}/messages`, {
+    return safeRequest(`${API_BASE}/conversations/${conversationId}/messages`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify({ content, sender })
     });
-    return res.json();
   },
 
   async handoffConversation(conversationId: string) {
-    const res = await fetch(`${API_BASE}/conversations/${conversationId}/handoff`, {
-      method: "POST",
-      headers: getHeaders()
+    return safeRequest(`${API_BASE}/conversations/${conversationId}/handoff`, {
+      method: "POST"
     });
-    return res.json();
   },
 
   async resolveConversation(conversationId: string) {
-    const res = await fetch(`${API_BASE}/conversations/${conversationId}/resolve`, {
-      method: "POST",
-      headers: getHeaders()
+    return safeRequest(`${API_BASE}/conversations/${conversationId}/resolve`, {
+      method: "POST"
     });
-    return res.json();
   },
 
   async deleteConversation(conversationId: string) {
-    const res = await fetch(`${API_BASE}/conversations/${conversationId}`, {
-      method: "DELETE",
-      headers: getHeaders()
+    return safeRequest(`${API_BASE}/conversations/${conversationId}`, {
+      method: "DELETE"
     });
-    return res.json();
   },
 
   // Leads
@@ -133,199 +203,146 @@ export const api = {
     const params = new URLSearchParams();
     if (status && status !== "All") params.append("status", status);
     if (q) params.append("q", q);
-    const res = await fetch(`${API_BASE}/leads?${params.toString()}`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/leads?${params.toString()}`);
   },
 
   async createLead(leadData: any) {
-    const res = await fetch(`${API_BASE}/leads`, {
+    return safeRequest(`${API_BASE}/leads`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(leadData)
     });
-    return res.json();
   },
 
   async updateLead(id: string, updates: any) {
-    const res = await fetch(`${API_BASE}/leads/${id}`, {
+    return safeRequest(`${API_BASE}/leads/${id}`, {
       method: "PATCH",
-      headers: getHeaders(),
       body: JSON.stringify(updates)
     });
-    return res.json();
   },
 
   // Appointments
   async getAppointments() {
-    const res = await fetch(`${API_BASE}/appointments`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/appointments`);
   },
 
   async getAvailability(date?: string) {
     const params = date ? `?date=${encodeURIComponent(date)}` : "";
-    const res = await fetch(`${API_BASE}/appointments/availability${params}`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/appointments/availability${params}`);
   },
 
   async createAppointment(appointmentData: any) {
-    const res = await fetch(`${API_BASE}/appointments`, {
+    return safeRequest(`${API_BASE}/appointments`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(appointmentData)
     });
-    return res.json();
   },
 
   async updateAppointment(id: string, updates: any) {
-    const res = await fetch(`${API_BASE}/appointments/${id}`, {
+    return safeRequest(`${API_BASE}/appointments/${id}`, {
       method: "PATCH",
-      headers: getHeaders(),
       body: JSON.stringify(updates)
     });
-    return res.json();
   },
 
   async cancelAppointment(id: string) {
-    const res = await fetch(`${API_BASE}/appointments/${id}/cancel`, {
-      method: "POST",
-      headers: getHeaders()
+    return safeRequest(`${API_BASE}/appointments/${id}/cancel`, {
+      method: "POST"
     });
-    return res.json();
   },
 
   // Knowledge Base & RAG
   async getKnowledgeDocs() {
-    const res = await fetch(`${API_BASE}/knowledge/documents`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/knowledge/documents`);
   },
 
   async uploadKnowledgeDoc(docData: { title: string; type: string; content?: string }) {
-    const res = await fetch(`${API_BASE}/knowledge/documents`, {
+    return safeRequest(`${API_BASE}/knowledge/documents`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(docData)
     });
-    return res.json();
   },
 
   async updateKnowledgeDoc(id: string, updates: { title?: string; type?: string; content?: string; status?: string }) {
-    const res = await fetch(`${API_BASE}/knowledge/documents/${id}`, {
+    return safeRequest(`${API_BASE}/knowledge/documents/${id}`, {
       method: "PATCH",
-      headers: getHeaders(),
       body: JSON.stringify(updates)
     });
-    return res.json();
   },
 
   async deleteKnowledgeDoc(id: string) {
-    const res = await fetch(`${API_BASE}/knowledge/documents/${id}`, {
-      method: "DELETE",
-      headers: getHeaders()
+    return safeRequest(`${API_BASE}/knowledge/documents/${id}`, {
+      method: "DELETE"
     });
-    return res.json();
   },
 
   async reindexKnowledgeDoc(id: string) {
-    const res = await fetch(`${API_BASE}/knowledge/documents/${id}/reindex`, {
-      method: "POST",
-      headers: getHeaders()
+    return safeRequest(`${API_BASE}/knowledge/documents/${id}/reindex`, {
+      method: "POST"
     });
-    return res.json();
   },
 
   async queryKnowledge(query: string) {
-    const res = await fetch(`${API_BASE}/knowledge/query`, {
+    return safeRequest(`${API_BASE}/knowledge/query`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify({ query })
     });
-    return res.json();
   },
 
   async scrapeKnowledgeUrl(data: { url: string; title?: string; agent?: string }) {
-    const res = await fetch(`${API_BASE}/knowledge/scrape`, {
+    return safeRequest(`${API_BASE}/knowledge/scrape`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(data)
     });
-    return res.json();
   },
 
-  // Integrations
+  // Integrations (Real Backend Endpoints)
   async getIntegrations() {
-    const res = await fetch(`${API_BASE}/integrations`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/integrations`);
   },
 
   async toggleIntegration(provider: string, credentials?: any) {
-    const res = await fetch(`${API_BASE}/integrations/${provider}/connect`, {
+    return safeRequest(`${API_BASE}/integrations/${provider}/connect`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(credentials || {})
     });
-    return res.json();
   },
 
   async testIntegration(provider: string, credentials?: any) {
-    const res = await fetch(`${API_BASE}/integrations/test`, {
+    return safeRequest(`${API_BASE}/integrations/${provider}/connect?testOnly=1`, {
       method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ provider, credentials: credentials || {} })
+      body: JSON.stringify(credentials || {})
     });
-    return res.json();
+  },
+
+  async disconnectIntegration(id: string) {
+    return safeRequest(`${API_BASE}/integrations/${id}`, {
+      method: "DELETE"
+    });
   },
 
   async getIntegrationStatus(id: string) {
-    const res = await fetch(`${API_BASE}/integrations/${id}/status`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/integrations/${id}/status`);
   },
 
   // Analytics
   async getAnalytics() {
-    const res = await fetch(`${API_BASE}/analytics/overview`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/analytics/overview`);
   },
 
   async getAnalyticsConversations() {
-    const res = await fetch(`${API_BASE}/analytics/conversations`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/analytics/conversations`);
   },
 
   async getAnalyticsLeads() {
-    const res = await fetch(`${API_BASE}/analytics/leads`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/analytics/leads`);
   },
 
   async getAnalyticsAppointments() {
-    const res = await fetch(`${API_BASE}/analytics/appointments`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/analytics/appointments`);
   },
 
   async getUsage() {
-    const res = await fetch(`${API_BASE}/usage`, {
-      headers: getHeaders()
-    });
-    return res.json();
+    return safeRequest(`${API_BASE}/usage`);
   },
 
   // Unified AI Assistant & Agents Chat
@@ -337,11 +354,256 @@ export const api = {
     customerName?: string;
     history?: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
   }) {
-    const res = await fetch(`${API_BASE}/ai/chat`, {
+    return safeRequest(`${API_BASE}/ai/chat`, {
       method: "POST",
-      headers: getHeaders(),
       body: JSON.stringify(payload)
     });
-    return res.json();
+  },
+
+  // --- GHL CONTACTS ---
+  async getContacts(params?: any) {
+    const q = new URLSearchParams();
+    if (params?.search) q.append("search", params.search);
+    if (params?.status) q.append("status", params.status);
+    return safeRequest(`${API_BASE}/contacts?${q.toString()}`);
+  },
+
+  async getContact(id: string) {
+    return safeRequest(`${API_BASE}/contacts/${id}`);
+  },
+
+  async createContact(data: any) {
+    return safeRequest(`${API_BASE}/contacts`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateContact(id: string, data: any) {
+    return safeRequest(`${API_BASE}/contacts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async deleteContact(id: string) {
+    return safeRequest(`${API_BASE}/contacts/${id}`, {
+      method: "DELETE"
+    });
+  },
+
+  async importContacts(csvContent: string) {
+    return safeRequest(`${API_BASE}/contacts/import`, {
+      method: "POST",
+      body: JSON.stringify({ csv_content: csvContent })
+    });
+  },
+
+  async exportContacts() {
+    return safeRequest(`${API_BASE}/contacts/export`);
+  },
+
+  // --- SMART LISTS ---
+  async getSmartLists() {
+    return safeRequest(`${API_BASE}/smart-lists`);
+  },
+
+  async createSmartList(data: any) {
+    return safeRequest(`${API_BASE}/smart-lists`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async deleteSmartList(id: string) {
+    return safeRequest(`${API_BASE}/smart-lists/${id}`, {
+      method: "DELETE"
+    });
+  },
+
+  // --- TEAM MANAGEMENT ---
+  async getTeamMembers() {
+    return safeRequest(`${API_BASE}/team/members`);
+  },
+
+  async inviteTeamMember(email: string, role: string) {
+    return safeRequest(`${API_BASE}/team/invite`, {
+      method: "POST",
+      body: JSON.stringify({ email, role })
+    });
+  },
+
+  // --- GHL PIPELINES ---
+  async getPipelines() {
+    return safeRequest(`${API_BASE}/pipelines`);
+  },
+
+  async createPipeline(data: any) {
+    return safeRequest(`${API_BASE}/pipelines`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updatePipeline(id: string, data: any) {
+    return safeRequest(`${API_BASE}/pipelines/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  },
+
+  // --- GHL OPPORTUNITIES ---
+  async getOpportunities(pipelineId?: string, stageId?: string) {
+    const params = new URLSearchParams();
+    if (pipelineId) params.append("pipeline_id", pipelineId);
+    if (stageId) params.append("stage_id", stageId);
+    return safeRequest(`${API_BASE}/opportunities?${params.toString()}`);
+  },
+
+  async createOpportunity(data: any) {
+    return safeRequest(`${API_BASE}/opportunities`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateOpportunity(id: string, data: any) {
+    return safeRequest(`${API_BASE}/opportunities/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async deleteOpportunity(id: string) {
+    return safeRequest(`${API_BASE}/opportunities/${id}`, {
+      method: "DELETE"
+    });
+  },
+
+  // --- GHL WORKFLOWS ---
+  async getWorkflows(mode?: 'workflows' | 'executions', workflowId?: string) {
+    const params = new URLSearchParams();
+    if (mode) params.append("mode", mode);
+    if (workflowId) params.append("workflow_id", workflowId);
+    return safeRequest(`${API_BASE}/workflows?${params.toString()}`);
+  },
+
+  async createWorkflow(data: any) {
+    return safeRequest(`${API_BASE}/workflows`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateWorkflow(id: string, data: any) {
+    return safeRequest(`${API_BASE}/workflows/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async executeWorkflow(workflowId: string, payload?: any) {
+    return safeRequest(`${API_BASE}/workflows/${workflowId}/execute`, {
+      method: "POST",
+      body: JSON.stringify(payload || {})
+    });
+  },
+
+  async getWorkflowExecutions(workflowId: string) {
+    return safeRequest(`${API_BASE}/workflows/${workflowId}/executions`);
+  },
+
+  // --- E-COMMERCE ORDERS ---
+  async createOrder(data: any) {
+    return safeRequest(`${API_BASE}/woocommerce/orders`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  // --- GHL TASKS ---
+  async getTasks(status?: string) {
+    const params = new URLSearchParams();
+    if (status) params.append("status", status);
+    return safeRequest(`${API_BASE}/tasks?${params.toString()}`);
+  },
+
+  async createTask(data: any) {
+    return safeRequest(`${API_BASE}/tasks`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateTask(id: string, data: any) {
+    return safeRequest(`${API_BASE}/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async deleteTask(id: string) {
+    return safeRequest(`${API_BASE}/tasks/${id}`, {
+      method: "DELETE"
+    });
+  },
+
+  // --- GHL COMPANIES ---
+  async getCompanies() {
+    return safeRequest(`${API_BASE}/companies`);
+  },
+
+  async createCompany(data: any) {
+    return safeRequest(`${API_BASE}/companies`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateCompany(id: string, data: any) {
+    return safeRequest(`${API_BASE}/companies/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async deleteCompany(id: string) {
+    return safeRequest(`${API_BASE}/companies/${id}`, {
+      method: "DELETE"
+    });
+  },
+
+  // --- GHL CUSTOM FIELDS & TIMELINE ---
+  async getCustomFields(entity?: string) {
+    const params = new URLSearchParams();
+    if (entity) params.append("entity", entity);
+    return safeRequest(`${API_BASE}/custom-fields?${params.toString()}`);
+  },
+
+  async createCustomField(data: any) {
+    return safeRequest(`${API_BASE}/custom-fields`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  async getActivityTimeline(contactId?: string) {
+    const params = new URLSearchParams();
+    if (contactId) params.append("contact_id", contactId);
+    return safeRequest(`${API_BASE}/timeline?${params.toString()}`);
+  },
+
+  async addTimelineEvent(data: any) {
+    return safeRequest(`${API_BASE}/timeline`, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+  },
+
+  // --- GLOBAL SEARCH ---
+  async globalSearch(query: string) {
+    const params = new URLSearchParams();
+    params.append("q", query);
+    return safeRequest(`${API_BASE}/search?${params.toString()}`);
   }
 };

@@ -97,20 +97,35 @@ class LeadController extends Controller
         return response()->json(['success' => true, 'data' => $lead], 201);
     }
 
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $lead = Lead::findOrFail($id);
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $lead = Lead::where('organization_id', $orgId)->findOrFail($id);
         return response()->json(['success' => true, 'data' => $lead]);
     }
 
     public function update(Request $request, string $id)
     {
-        $lead = Lead::findOrFail($id);
-        $data = $request->all();
-        if (isset($data['status']) && !isset($data['stage'])) {
-            $data['stage'] = $data['status'];
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $lead = Lead::where('organization_id', $orgId)->findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email',
+            'phone' => 'nullable|string',
+            'company' => 'nullable|string',
+            'source' => 'nullable|string',
+            'status' => 'nullable|string',
+            'stage' => 'nullable|string',
+            'score' => 'nullable|integer',
+            'notes' => 'nullable|string'
+        ]);
+
+        if (isset($validated['status']) && !isset($validated['stage'])) {
+            $validated['stage'] = $validated['status'];
         }
-        $lead->update($data);
+
+        $lead->update($validated);
         return response()->json(['success' => true, 'data' => $lead]);
     }
 }

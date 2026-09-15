@@ -21,6 +21,11 @@ import ScreenTemplates from "@/components/ScreenTemplates";
 import ScreenAccountSetup from "@/components/ScreenAccountSetup";
 import ScreenDocumentation from "@/components/ScreenDocumentation";
 import ScreenAIAssistant from "@/components/ScreenAIAssistant";
+import Screen18Opportunities from "@/components/Screen18Opportunities";
+import Screen19Workflows from "@/components/Screen19Workflows";
+import Screen20TasksCompanies from "@/components/Screen20TasksCompanies";
+import Contact360Drawer from "@/components/Contact360Drawer";
+import GlobalSearchModal from "@/components/GlobalSearchModal";
 import EmbedCodeModal from "@/components/EmbedCodeModal";
 import DemoSimulatorModal from "@/components/DemoSimulatorModal";
 import { Product, productsList } from "@/lib/data";
@@ -33,10 +38,30 @@ export default function HomePage() {
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isEmbedModalOpen, setIsEmbedModalOpen] = useState<boolean>(false);
   const [isSimulatorModalOpen, setIsSimulatorModalOpen] = useState<boolean>(false);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState<boolean>(false);
+  const [isContact360Open, setIsContact360Open] = useState<boolean>(false);
+  const [contact360Target, setContact360Target] = useState<any>(null);
   const [simulationToast, setSimulationToast] = useState<{ title: string; subtitle: string } | null>(null);
   const [cartItems, setCartItems] = useState<{ product: Product; quantity: number }[]>([
     { product: productsList[0], quantity: 1 }
   ]);
+
+  // Global Ctrl + K search listener
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setIsGlobalSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleOpen360 = (contact: any) => {
+    setContact360Target(contact);
+    setIsContact360Open(true);
+  };
 
   const handleAddToCart = (product: Product) => {
     setCartItems((prev) => {
@@ -102,6 +127,12 @@ export default function HomePage() {
         return { category: "Guides", title: "Documentation", subtitle: "Find guides, tutorials, and helpful resources" };
       case 17:
         return { category: "Ecosystem", title: "Integrations Hub", subtitle: "Connect Google Calendar, Shopify, WooCommerce, and messaging APIs" };
+      case 18:
+        return { category: "Sales Core", title: "Pipelines & Opportunities", subtitle: "GHL visual Kanban stages, deal value forecasting, and win probability tracking" };
+      case 19:
+        return { category: "Automation", title: "Workflow Automation Builder", subtitle: "Trigger-condition-action workflow canvas with delay engine and execution audit logs" };
+      case 20:
+        return { category: "CRM Matrix", title: "Tasks & Company Accounts", subtitle: "Operational task management matrix and B2B organizational business accounts" };
       default:
         return { category: "Platform", title: "Nexa AI / Sales Assistant", subtitle: "Enterprise AI Conversation & Sales Suite" };
     }
@@ -128,7 +159,7 @@ export default function HomePage() {
       case 6:
         return <Screen6AppointmentAgent onNavigate={(screen) => setActiveScreen(screen)} />;
       case 7:
-        return <Screen7Leads onNavigate={(screen) => setActiveScreen(screen)} />;
+        return <Screen7Leads onNavigate={(screen) => setActiveScreen(screen)} onOpenContact360Direct={handleOpen360} />;
       case 8:
         return <Screen8Calendar />;
       case 9:
@@ -149,6 +180,12 @@ export default function HomePage() {
         return <ScreenDocumentation onNavigate={(screen) => setActiveScreen(screen)} />;
       case 17:
         return <Screen10Integrations onNavigate={(screen) => setActiveScreen(screen)} />;
+      case 18:
+        return <Screen18Opportunities onNavigate={(screen) => setActiveScreen(screen)} onOpenContact360={handleOpen360} />;
+      case 19:
+        return <Screen19Workflows onNavigate={(screen) => setActiveScreen(screen)} />;
+      case 20:
+        return <Screen20TasksCompanies onNavigate={(screen) => setActiveScreen(screen)} onOpenContact360={handleOpen360} />;
       default:
         return <Screen2Dashboard onNavigate={(screen) => setActiveScreen(screen)} />;
     }
@@ -169,6 +206,7 @@ export default function HomePage() {
         resetDemo={handleResetDemo}
         onOpenEmbed={() => setIsEmbedModalOpen(true)}
         onOpenSimulator={() => setIsSimulatorModalOpen(true)}
+        onOpenGlobalSearch={() => setIsGlobalSearchOpen(true)}
       />
 
       {/* Main Viewport Container */}
@@ -509,6 +547,22 @@ export default function HomePage() {
           setSimulationToast({ title: evt.title, subtitle: evt.subtitle });
           setTimeout(() => setSimulationToast(null), 4500);
         }}
+      />
+
+      {/* Global Ctrl + K Search Modal */}
+      <GlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        onNavigate={(screen) => setActiveScreen(screen)}
+        onSelectContact={handleOpen360}
+      />
+
+      {/* Global Contact 360 Workspace Drawer */}
+      <Contact360Drawer
+        contact={contact360Target}
+        isOpen={isContact360Open}
+        onClose={() => setIsContact360Open(false)}
+        onNavigateScreen={(screen) => setActiveScreen(screen)}
       />
 
       {/* Global Simulation Notification Toast */}

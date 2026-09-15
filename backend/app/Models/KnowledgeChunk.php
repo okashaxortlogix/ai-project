@@ -17,15 +17,18 @@ class KnowledgeChunk extends Model
         'organization_id',
         'document_id',
         'chunk_index',
+        'text',
         'content',
         'embedding',
         'metadata',
+        'metadata_json',
     ];
 
     protected $casts = [
         'chunk_index' => 'integer',
         'embedding' => 'array',
         'metadata' => 'array',
+        'metadata_json' => 'array',
     ];
 
     public function document()

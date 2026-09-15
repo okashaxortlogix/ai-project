@@ -13,8 +13,12 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password_hash');
+            $table->string('password')->nullable();
+            $table->string('password_hash')->nullable();
+            $table->string('role')->default('Admin');
             $table->string('status')->default('active'); // active, invited, suspended
+            $table->string('avatar')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

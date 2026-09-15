@@ -180,7 +180,7 @@ class WooCommerceController extends Controller
      *
      * Validates X-WC-Webhook-Signature header against WOOCOMMERCE_WEBHOOK_SECRET
      */
-    public function handleWebhook(Request $request)
+    public function handleWebhook(Request $request, ?string $organization = null)
     {
         $signature = $request->header('X-WC-Webhook-Signature') ?? $request->header('x-wc-webhook-signature');
 
@@ -193,6 +193,40 @@ class WooCommerceController extends Controller
         }
 
         $rawPayload = $request->getContent();
+
+        // Resolve organization context
+        $targetOrgId = $organization 
+            ?? $request->route('organization') 
+            ?? $request->route('organization_id') 
+            ?? $request->query('organization_id')
+            ?? $request->header('X-Organization-Id');
+
+        $resolvedOrgId = null;
+        if ($targetOrgId) {
+            $org = \App\Models\Organization::find($targetOrgId);
+            if (!$org) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Organization not found for webhook target.'
+                ], 404);
+            }
+            $resolvedOrgId = $org->id;
+        } else {
+            $resolvedOrgId = \App\Models\Organization::first()?->id;
+        }
+        // Timestamp Freshness / Replay Attack Mitigation (MISSING-015)
+        $timestamp = $request->header('X-WC-Webhook-Timestamp') ?? $request->header('X-Webhook-Timestamp');
+        if ($timestamp) {
+            $eventTime = is_numeric($timestamp) ? (int)$timestamp : strtotime($timestamp);
+            if ($eventTime && abs(time() - $eventTime) > 300) {
+                Log::warning("WooCommerce Webhook rejected: Stale timestamp detected ({$timestamp})");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Webhook rejected: Timestamp expired (potential replay attack).'
+                ], 401);
+            }
+        }
+
         $secret = config('ecommerce.woocommerce.webhook_secret', env('WOOCOMMERCE_WEBHOOK_SECRET', '2146'));
 
         // Compute HMAC SHA256 base64-encoded signature
@@ -216,17 +250,61 @@ class WooCommerceController extends Controller
             $payload = json_decode($rawPayload, true) ?? [];
         }
 
-        Log::info("WooCommerce Webhook Authenticated successfully. Topic: {$topic}");
+        Log::info("WooCommerce Webhook Authenticated successfully for Org [{$resolvedOrgId}]. Topic: {$topic}");
 
-        // If order payload, trigger cross-platform sync
+        $payloadHash = hash('sha256', $rawPayload);
+        $orderId = $payload['id'] ?? ($payload['number'] ?? null);
+
+        // Idempotency: Deduplicate identical webhook deliveries scoped to organization
+        $existing = \App\Models\InboundWebhook::where('provider', 'woocommerce')
+            ->where(function ($q) use ($resolvedOrgId) {
+                if ($resolvedOrgId) {
+                    $q->where('organization_id', $resolvedOrgId);
+                }
+            })
+            ->where('payload_hash', $payloadHash)
+            ->first();
+
+        if ($existing && $existing->status === 'processed') {
+            Log::info("WooCommerce Webhook: Duplicate event ignored for payload hash {$payloadHash}");
+            return response()->json([
+                'success' => true,
+                'message' => 'Duplicate webhook already processed.',
+                'topic' => $topic,
+                'idempotent' => true
+            ], 200);
+        }
+
+        $webhookRecord = \App\Models\InboundWebhook::firstOrCreate(
+            [
+                'provider' => 'woocommerce', 
+                'payload_hash' => $payloadHash,
+                'organization_id' => $resolvedOrgId
+            ],
+            [
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'organization_id' => $resolvedOrgId,
+                'event_id' => (string) $orderId,
+                'event_type' => $topic,
+                'payload_json' => $payload,
+                'status' => 'pending'
+            ]
+        );
+
+        // If order payload, trigger cross-platform sync asynchronously
         if (isset($payload['line_items']) || str_contains($topic, 'order')) {
+            \App\Jobs\ProcessInboundWebhookJob::dispatch($webhookRecord->id);
+
+            // Also execute immediate sync summary for HTTP response
             $syncSummary = $this->handleWooCommerceOrderCreated($payload);
+            $webhookRecord->update(['status' => 'processed', 'processed_at' => now()]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'WooCommerce order webhook processed and cross-platform sync completed.',
                 'topic' => $topic,
-                'sync_summary' => $syncSummary
+                'sync_summary' => $syncSummary,
+                'idempotent' => false
             ], 200);
         }
 

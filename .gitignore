@@ -31,6 +31,26 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# SQLite & Local Databases
+*.sqlite
+*.sqlite-journal
+backend/database/database.sqlite
+
+# Build & Test Caches
+*.phar
+composer.phar
+.phpunit.result.cache
+backend/bootstrap/cache/*.php
+backend/storage/*.key
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+!backend/storage/framework/cache/.gitignore
+!backend/storage/framework/sessions/.gitignore
+!backend/storage/framework/views/.gitignore
+!backend/storage/logs/.gitignore
+
 # IDE
 .idea/
 .vscode/

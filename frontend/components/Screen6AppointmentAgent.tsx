@@ -179,11 +179,12 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
         }))
       });
 
-      if (res.toolExecuted && res.toolExecuted.toolName === "create_appointment") {
+      const isAppointmentCreated = res.toolExecuted && (res.toolExecuted.toolName === "create_appointment" || res.toolExecuted.name === "create_appointment");
+      if (isAppointmentCreated) {
         await loadAppointments();
       }
 
-      const replyText = res.reply || "I can help check our real-time calendar availability or reschedule any confirmed slot.";
+      const replyText = res.reply || "I am currently unable to check appointment availability. Please try again in a few moments.";
       const aiId = `ai-${Date.now()}`;
 
       // 2. Hide typing indicator and insert empty streaming placeholder

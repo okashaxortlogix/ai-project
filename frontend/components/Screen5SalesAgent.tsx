@@ -123,7 +123,7 @@ export default function Screen5SalesAgent({
         }
       }
 
-      const replyText = res.reply || "Both models include a 1-year warranty and free expedited shipping. Would you like to proceed?";
+      const replyText = res.reply || "I am currently unable to retrieve product recommendations. Please check back shortly.";
       const aiId = `ai-${Date.now()}`;
 
       // 2. Hide typing indicator and insert streaming placeholder
@@ -387,19 +387,68 @@ export default function Screen5SalesAgent({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card className="flex flex-col h-[520px]">
-              <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Sales Copilot</div>
-                    <div className="text-[10px] text-emerald-600 font-semibold">
-                      ● Active • High-conversion mode
+              <div className="p-3.5 border-b border-slate-100 bg-slate-50/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-2xs">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900">Sales Copilot</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded-full border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 badge-pulse" />
+                          Active
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 font-medium">
+                        Specialized Domain: Laptops &amp; Hardware Catalog (Apple MacBook &amp; Dell Inspiron Systems)
+                      </p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      Promo: NEXA10 active
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMessages([
+                          {
+                            id: `reset-${Date.now()}`,
+                            sender: "agent",
+                            content: "Hi there! I'm your AI Sales Specialist. Looking for laptop recommendations, team hardware bundles, or discount pricing?",
+                            time: "Just now"
+                          }
+                        ])
+                      }
+                      className="text-xs text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-100 px-2 py-0.5 rounded border border-slate-200 transition-colors font-medium cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[10px] text-slate-400">Promo: NEXA10 active</span>
+
+                {/* Quick Topic Exploration Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] pt-1 border-t border-slate-200/50">
+                  <span className="text-slate-400 font-medium shrink-0">Explore:</span>
+                  {[
+                    { label: "MacBook Air M1", text: "i am looking for a macbook" },
+                    { label: "MacBook Battery Life", text: "How long does the MacBook battery last?" },
+                    { label: "MacBook for Coding", text: "Is the MacBook Air good for programming?" },
+                    { label: "Dell Inspiron 15", text: "Tell me about the Dell Inspiron 15" },
+                    { label: "Compare Both", text: "Compare the MacBook Air M1 vs Dell Inspiron 15" }
+                  ].map((chip, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setInput(chip.text)}
+                      className="shrink-0 px-2 py-0.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-600 rounded border border-slate-200 text-[10.5px] transition-colors cursor-pointer"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#F8FAFC]/50">
@@ -423,7 +472,7 @@ export default function Screen5SalesAgent({
                         }`}
                       >
                         <div className="whitespace-pre-line">
-                          {m.content}
+                          {m.content.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1").replace(/\*+/g, "")}
                           {m.isStreaming && (
                             <span className="inline-block w-1.5 h-3 bg-blue-600 rounded-xs animate-pulse ml-0.5 align-middle" />
                           )}

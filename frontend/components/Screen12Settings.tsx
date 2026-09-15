@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Settings,
   Bot,
@@ -27,6 +27,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
+import { api } from "@/lib/api";
 
 interface Screen12SettingsProps {
   onNavigate?: (screen: number) => void;
@@ -101,15 +102,47 @@ export default function Screen12Settings({ onNavigate, isCompact = false }: Scre
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<TeamMember["role"]>("Agent");
 
-  const handleSaveGeneral = (e: React.FormEvent) => {
+  useEffect(() => {
+    api.getOrganizations().then((res) => {
+      if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+        const org = res.data[0];
+        if (org.name) setName(org.name);
+        if (org.timezone) setTimezone(org.timezone);
+        if (org.settings_json) {
+          if (org.settings_json.theme) setThemeMode(org.settings_json.theme);
+          if (org.settings_json.model) setSelectedModel(org.settings_json.model);
+        }
+      }
+    }).catch(console.error);
+  }, []);
+
+  const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaveToast(true);
-    setTimeout(() => setSaveToast(false), 3000);
+    try {
+      const orgId = typeof window !== "undefined" ? localStorage.getItem("organization_id") : null;
+      if (orgId) {
+        await api.updateOrganization(orgId, {
+          name,
+          timezone,
+          settings_json: {
+            theme: themeMode,
+            model: selectedModel,
+            language
+          }
+        });
+      }
+      setSaveToast(true);
+      setTimeout(() => setSaveToast(false), 3000);
+    } catch (err) {
+      console.error("Failed to save settings", err);
+    }
   };
 
   const handleClearHistory = () => {
-    if (confirm("Are you sure you want to clear your local AI chat session history?")) {
-      alert("Chat session history cleared.");
+    if (typeof window !== "undefined") {
+      sessionStorage.clear();
+      setSaveToast(true);
+      setTimeout(() => setSaveToast(false), 2500);
     }
   };
 

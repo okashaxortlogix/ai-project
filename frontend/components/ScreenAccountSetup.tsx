@@ -17,6 +17,7 @@ import {
 import Modal from "./ui/Modal";
 import Button from "./ui/Button";
 import StatusBadge from "./ui/StatusBadge";
+import { api } from "@/lib/api";
 
 interface ScreenAccountSetupProps {
   onNavigate?: (screen: number) => void;
@@ -147,8 +148,19 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
             <Button
               variant="primary"
               size="sm"
-              onClick={() => {
-                alert("Store & CRM settings saved successfully!");
+              onClick={async () => {
+                try {
+                  const orgRes = await api.getOrganizations();
+                  const orgs = orgRes?.data || orgRes || [];
+                  const orgId = Array.isArray(orgs) && orgs[0]?.id ? orgs[0].id : localStorage.getItem("organization_id");
+                  if (orgId) {
+                    await api.updateOrganization(orgId, {
+                      settings: { store_id: storeId, webhook_url: webhookUrl }
+                    });
+                  }
+                } catch (e) {
+                  console.error("Failed to save store settings:", e);
+                }
                 setActiveModal(null);
               }}
             >
@@ -243,8 +255,19 @@ export default function ScreenAccountSetup({ onNavigate }: ScreenAccountSetupPro
             <Button
               variant="primary"
               size="sm"
-              onClick={() => {
-                alert("Branding settings applied!");
+              onClick={async () => {
+                try {
+                  const orgRes = await api.getOrganizations();
+                  const orgs = orgRes?.data || orgRes || [];
+                  const orgId = Array.isArray(orgs) && orgs[0]?.id ? orgs[0].id : localStorage.getItem("organization_id");
+                  if (orgId) {
+                    await api.updateOrganization(orgId, {
+                      settings: { assistant_name: assistantName, brand_color: brandColor }
+                    });
+                  }
+                } catch (e) {
+                  console.error("Failed to save branding:", e);
+                }
                 setActiveModal(null);
               }}
             >

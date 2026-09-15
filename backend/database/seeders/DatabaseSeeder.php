@@ -29,15 +29,27 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 2. Create Users
+        $hashedSecret = bcrypt('secret123');
         $admin = User::create([
             'id' => (string) Str::uuid(),
+            'organization_id' => $org->id,
             'name' => 'John Doe',
             'email' => 'john@acme.com',
-            'password_hash' => bcrypt('secret123'),
+            'password' => $hashedSecret,
+            'password_hash' => $hashedSecret,
             'status' => 'active'
         ]);
 
         // 3. Create Agents
+        $assistantAgent = Agent::create([
+            'id' => (string) Str::uuid(),
+            'organization_id' => $org->id,
+            'type' => 'assistant',
+            'name' => 'Master AI Assistant',
+            'enabled' => true,
+            'system_prompt' => 'You are the Master AI Assistant for the CRM suite. Manage contacts, pipeline deals, schedule appointments, and coordinate tasks with zero hallucination.'
+        ]);
+
         $supportAgent = Agent::create([
             'id' => (string) Str::uuid(),
             'organization_id' => $org->id,

@@ -30,7 +30,7 @@ class AppointmentController extends Controller
 
     public function availability(Request $request)
     {
-        $orgId = $request->header('X-Organization-Id', 'org-acme-1');
+        $orgId = $request->user()?->organization_id ?? $request->header('X-Organization-Id', 'org-acme-1');
         $dateStr = $request->query('date', now()->format('Y-m-d'));
 
         try {
@@ -60,28 +60,49 @@ class AppointmentController extends Controller
             ->get();
 
         $bookedSlots = [];
-        foreach ($bookedAppointments as $apt) {
-            if (!empty($apt->time)) {
-                $bookedSlots[] = $apt->time;
-            } elseif ($apt->start_at) {
-                $bookedSlots[] = Carbon::parse($apt->start_at)->format('h:i A');
+        $availableSlots = [];
+
+        foreach ($allSlots as $slot) {
+            try {
+                $slotStart = Carbon::parse("{$parsedDate} {$slot}");
+                $slotEnd = (clone $slotStart)->addMinutes(30);
+
+                $isOverlapping = false;
+                foreach ($bookedAppointments as $booked) {
+                    if ($booked->start_at && $booked->end_at) {
+                        $bStart = Carbon::parse($booked->start_at);
+                        $bEnd = Carbon::parse($booked->end_at);
+                        if ($bStart < $slotEnd && $bEnd > $slotStart) {
+                            $isOverlapping = true;
+                            break;
+                        }
+                    } elseif ($booked->time === $slot) {
+                        $isOverlapping = true;
+                        break;
+                    }
+                }
+
+                if ($isOverlapping) {
+                    $bookedSlots[] = $slot;
+                } else {
+                    $availableSlots[] = $slot;
+                }
+            } catch (\Exception $e) {
+                $availableSlots[] = $slot;
             }
         }
-
-        $bookedSlots = array_values(array_unique($bookedSlots));
-        $availableSlots = array_values(array_diff($allSlots, $bookedSlots));
 
         return response()->json([
             'success' => true,
             'date' => $dateStr,
-            'available_slots' => $availableSlots,
-            'booked_slots' => $bookedSlots
+            'available_slots' => array_values(array_unique($availableSlots)),
+            'booked_slots' => array_values(array_unique($bookedSlots))
         ]);
     }
 
     public function store(Request $request)
     {
-        $orgId = $request->header('X-Organization-Id', 'org-acme-1');
+        $orgId = $request->user()?->organization_id ?? $request->header('X-Organization-Id', 'org-acme-1');
         $validated = $request->validate([
             'title' => 'required|string',
             'date' => 'required|string',
@@ -116,6 +137,28 @@ class AppointmentController extends Controller
         $customerName = $validated['customer_name'];
         $avatar = $validated['avatar'] ?? ("https://ui-avatars.com/api/?name=" . urlencode($customerName) . "&background=4F46E5&color=fff&size=120");
 
+        // Conflict check with datetime range overlap (BUG-026)
+        $existingConflict = Appointment::where('organization_id', $orgId)
+            ->where('status', '!=', 'Cancelled')
+            ->where(function ($q) use ($startAt, $endAt, $validated) {
+                $q->where(function ($sub) use ($startAt, $endAt) {
+                    $sub->whereNotNull('start_at')
+                        ->where('start_at', '<', $endAt)
+                        ->where('end_at', '>', $startAt);
+                })->orWhere(function ($sub) use ($validated) {
+                    $sub->where('date', $validated['date'])
+                        ->where('time', $validated['time']);
+                });
+            })
+            ->first();
+
+        if ($existingConflict) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Time slot is already reserved or overlaps with an existing appointment. Please select another slot.'
+            ], 422);
+        }
+
         $apt = Appointment::create([
             'id' => (string) Str::uuid(),
             'organization_id' => $orgId,
@@ -133,20 +176,51 @@ class AppointmentController extends Controller
             'status' => 'Confirmed'
         ]);
 
+        \App\Services\Audit\AuditLogger::log(
+            $orgId,
+            'appointment_booked',
+            'customer',
+            $customerId,
+            'appointment',
+            $apt->id,
+            ['date' => $apt->date, 'time' => $apt->time, 'service' => $apt->service]
+        );
+
         return response()->json(['success' => true, 'data' => $apt], 201);
     }
 
     public function update(Request $request, string $id)
     {
-        $apt = Appointment::findOrFail($id);
-        $apt->update($request->all());
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $apt = Appointment::where('organization_id', $orgId)->findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'sometimes|string',
+            'date' => 'sometimes|string',
+            'time' => 'sometimes|string',
+            'status' => 'sometimes|string',
+            'service' => 'sometimes|string'
+        ]);
+
+        $apt->update($validated);
         return response()->json(['success' => true, 'data' => $apt]);
     }
 
-    public function cancel(string $id)
+    public function cancel(Request $request, string $id)
     {
-        $apt = Appointment::findOrFail($id);
+        $orgId = $request->user()->organization_id ?? $request->header('X-Organization-Id');
+        $apt = Appointment::where('organization_id', $orgId)->findOrFail($id);
         $apt->update(['status' => 'Cancelled']);
+
+        \App\Services\Audit\AuditLogger::log(
+            $orgId,
+            'appointment_cancelled',
+            'user',
+            $request->user()->id ?? null,
+            'appointment',
+            $apt->id
+        );
+
         return response()->json(['success' => true, 'data' => $apt]);
     }
 }

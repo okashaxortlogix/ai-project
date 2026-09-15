@@ -1,13 +1,15 @@
+version: '3.8'
+
 services:
   nginx:
     image: nginx:alpine
     container_name: ai_suite_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ../frontend/public:/var/www/frontend/public:ro
     depends_on:
       - backend
       - frontend
@@ -16,43 +18,109 @@ services:
 
   backend:
     build:
-      context: ../backend
+      context: ../../backend
       dockerfile: ../infrastructure/docker/Dockerfile.backend
     container_name: ai_suite_backend
     restart: unless-stopped
     working_dir: /var/www/backend
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
+      APP_NAME: "AI Conversation & Sales Suite"
+      APP_ENV: production
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_KEY: "${APP_KEY:-base64:JqX9Rz8l4sE1aWvN2oP5tY7uI3kL6mO8=}"
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ai_suite
-      DB_USERNAME: ai_user
-      DB_PASSWORD: ai_password
+      DB_DATABASE: "${DB_DATABASE:-ai_suite}"
+      DB_USERNAME: "${DB_USERNAME:-ai_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-ai_secure_pass_2026}"
+      QUEUE_CONNECTION: redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      QDRANT_HOST: qdrant
-      QDRANT_PORT: 6333
+      QDRANT_HOST: http://qdrant:6333
     volumes:
-      - ../backend:/var/www/backend
+      - ../../backend/storage:/var/www/backend/storage
+    depends_on:
+      - mysql
+      - redis
+      - qdrant
+    networks:
+      - ai_suite_network
+
+  queue_worker:
+    build:
+      context: ../../backend
+      dockerfile: ../infrastructure/docker/Dockerfile.backend
+    container_name: ai_suite_queue_worker
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    command: ["php", "artisan", "queue:work", "redis", "--tries=3", "--timeout=90", "--sleep=3"]
+    environment:
+      APP_NAME: "AI Conversation & Sales Suite"
+      APP_ENV: production
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_KEY: "${APP_KEY:-base64:JqX9Rz8l4sE1aWvN2oP5tY7uI3kL6mO8=}"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-ai_suite}"
+      DB_USERNAME: "${DB_USERNAME:-ai_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-ai_secure_pass_2026}"
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QDRANT_HOST: http://qdrant:6333
+    volumes:
+      - ../../backend/storage:/var/www/backend/storage
+    depends_on:
+      - backend
+      - redis
+      - mysql
+    networks:
+      - ai_suite_network
+
+  scheduler:
+    build:
+      context: ../../backend
+      dockerfile: ../infrastructure/docker/Dockerfile.backend
+    container_name: ai_suite_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      APP_NAME: "AI Conversation & Sales Suite"
+      APP_ENV: production
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_KEY: "${APP_KEY:-base64:JqX9Rz8l4sE1aWvN2oP5tY7uI3kL6mO8=}"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-ai_suite}"
+      DB_USERNAME: "${DB_USERNAME:-ai_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-ai_secure_pass_2026}"
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - backend
+      - redis
+      - mysql
     networks:
       - ai_suite_network
 
   frontend:
     build:
-      context: ../frontend
+      context: ../../frontend
       dockerfile: ../infrastructure/docker/Dockerfile.frontend
     container_name: ai_suite_frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://localhost/api/v1
-    volumes:
-      - ../frontend:/app
-      - /app/node_modules
+    depends_on:
+      - backend
     networks:
       - ai_suite_network
 
@@ -61,10 +129,10 @@ services:
     container_name: ai_suite_mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ai_suite
-      MYSQL_USER: ai_user
-      MYSQL_PASSWORD: ai_password
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: "${DB_DATABASE:-ai_suite}"
+      MYSQL_USER: "${DB_USERNAME:-ai_user}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-ai_secure_pass_2026}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root_secure_pass_2026}"
     ports:
       - "3306:3306"
     volumes:

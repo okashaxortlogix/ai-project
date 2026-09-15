@@ -14,6 +14,19 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WooCommerceController;
 use App\Http\Controllers\Api\ShopifyController;
+use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\OpportunityController;
+use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\CustomObjectController;
+use App\Http\Controllers\Api\WorkflowController;
+use App\Http\Controllers\Api\AiChatController;
+use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\ActivityController;
+use App\Http\Controllers\Api\CustomFieldController;
+use App\Http\Controllers\Api\SmartListController;
+use App\Http\Controllers\Api\TeamController;
+use App\Http\Controllers\Api\ContactImportExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,9 +38,14 @@ use App\Http\Controllers\Api\ShopifyController;
 Route::prefix('v1')->group(function () {
     // Authentication
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::get('/auth/login', fn() => response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401))->name('login');
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/me', [AuthController::class, 'me'])->middleware('auth:sanctum');
+
+    // Live AI Chat & Function Calling
+    Route::post('/ai/chat', [AiChatController::class, 'chat']);
+    Route::post('/team/accept-invite', [TeamController::class, 'acceptInvite']);
 
     // Public Widget API
     Route::prefix('widget')->group(function () {
@@ -40,8 +58,15 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum'])->group(function () {
         // Organizations
         Route::get('/organizations', [OrganizationController::class, 'index']);
+        Route::post('/organizations', [OrganizationController::class, 'store'])->middleware('role:Admin');
         Route::get('/organizations/{organization}', [OrganizationController::class, 'show']);
-        Route::patch('/organizations/{organization}', [OrganizationController::class, 'update']);
+        Route::patch('/organizations/{organization}', [OrganizationController::class, 'update'])->middleware('role:Admin');
+        Route::delete('/organizations/{organization}', [OrganizationController::class, 'destroy'])->middleware('role:Admin');
+
+        // Team Management & Role Delegation
+        Route::get('/team/members', [TeamController::class, 'members']);
+        Route::post('/team/invite', [TeamController::class, 'invite'])->middleware('role:Admin,Manager');
+        Route::delete('/team/invitations/{id}', [TeamController::class, 'revokeInvite'])->middleware('role:Admin,Manager');
 
         // Conversations
         Route::get('/conversations', [ConversationController::class, 'index']);
@@ -58,6 +83,75 @@ Route::prefix('v1')->group(function () {
         Route::get('/customers/{customer}', [CustomerController::class, 'show']);
         Route::patch('/customers/{customer}', [CustomerController::class, 'update']);
 
+        // Contacts (GHL First-Class Entity)
+        Route::get('/contacts', [ContactController::class, 'index']);
+        Route::post('/contacts', [ContactController::class, 'store']);
+        Route::post('/contacts/import', [ContactImportExportController::class, 'import']);
+        Route::get('/contacts/export', [ContactImportExportController::class, 'export']);
+        Route::get('/contacts/duplicates', [ContactController::class, 'duplicates']);
+        Route::post('/contacts/merge', [ContactController::class, 'merge']);
+        Route::get('/contacts/{contact}', [ContactController::class, 'show']);
+        Route::patch('/contacts/{contact}', [ContactController::class, 'update']);
+        Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->middleware('role:Admin,Manager');
+
+        // Smart Lists (GHL Dynamic Segmentation Engine)
+        Route::get('/smart-lists', [SmartListController::class, 'index']);
+        Route::post('/smart-lists', [SmartListController::class, 'store']);
+        Route::get('/smart-lists/{smartList}', [SmartListController::class, 'show']);
+        Route::patch('/smart-lists/{smartList}', [SmartListController::class, 'update']);
+        Route::delete('/smart-lists/{smartList}', [SmartListController::class, 'destroy'])->middleware('role:Admin,Manager');
+
+        // Companies
+        Route::get('/companies', [CompanyController::class, 'index']);
+        Route::post('/companies', [CompanyController::class, 'store']);
+        Route::get('/companies/{company}', [CompanyController::class, 'show']);
+        Route::patch('/companies/{company}', [CompanyController::class, 'update']);
+        Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('role:Admin,Manager');
+        Route::post('/companies/{company}/attach-contact', [CompanyController::class, 'attachContact']);
+
+        // Pipelines & Opportunities
+        Route::get('/pipelines', [OpportunityController::class, 'pipelines']);
+        Route::post('/pipelines', [OpportunityController::class, 'storePipeline'])->middleware('role:Admin,Manager');
+        Route::patch('/pipelines/{pipeline}', [OpportunityController::class, 'updatePipeline'])->middleware('role:Admin,Manager');
+        Route::get('/opportunities', [OpportunityController::class, 'index']);
+        Route::post('/opportunities', [OpportunityController::class, 'store']);
+        Route::get('/opportunities/{opportunity}', [OpportunityController::class, 'show']);
+        Route::patch('/opportunities/{opportunity}', [OpportunityController::class, 'update']);
+        Route::delete('/opportunities/{opportunity}', [OpportunityController::class, 'destroy'])->middleware('role:Admin,Manager');
+
+        // Tasks
+        Route::get('/tasks', [TaskController::class, 'index']);
+        Route::post('/tasks', [TaskController::class, 'store']);
+        Route::get('/tasks/{task}', [TaskController::class, 'show']);
+        Route::patch('/tasks/{task}', [TaskController::class, 'update']);
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->middleware('role:Admin,Manager');
+
+        // CRM Activity Timeline & Notes
+        Route::get('/timeline', [ActivityController::class, 'index']);
+        Route::post('/timeline', [ActivityController::class, 'store']);
+
+        // Custom Fields & Global Search
+        Route::get('/custom-fields', [CustomFieldController::class, 'index']);
+        Route::post('/custom-fields', [CustomFieldController::class, 'store']);
+        Route::get('/search', [SearchController::class, 'search']);
+
+        // Custom Objects Engine & Associations
+        Route::get('/custom-objects', [CustomObjectController::class, 'index']);
+        Route::post('/custom-objects', [CustomObjectController::class, 'store'])->middleware('role:Admin,Manager');
+        Route::get('/custom-objects/{customObject}', [CustomObjectController::class, 'show']);
+        Route::get('/custom-objects/{customObject}/records', [CustomObjectController::class, 'records']);
+        Route::post('/custom-objects/{customObject}/records', [CustomObjectController::class, 'storeRecord']);
+        Route::post('/associations', [CustomObjectController::class, 'associate'])->middleware('role:Admin,Manager');
+
+        // Production Workflow Engine
+        Route::get('/workflows', [WorkflowController::class, 'index']);
+        Route::post('/workflows', [WorkflowController::class, 'store'])->middleware('role:Admin,Manager');
+        Route::get('/workflows/{workflow}', [WorkflowController::class, 'show']);
+        Route::patch('/workflows/{workflow}', [WorkflowController::class, 'update'])->middleware('role:Admin,Manager');
+        Route::post('/workflows/{workflow}/toggle-publish', [WorkflowController::class, 'togglePublish'])->middleware('role:Admin,Manager');
+        Route::post('/workflows/{workflow}/execute', [WorkflowController::class, 'execute']);
+        Route::get('/workflows/{workflow}/executions', [WorkflowController::class, 'executions']);
+
         // Leads
         Route::get('/leads', [LeadController::class, 'index']);
         Route::post('/leads', [LeadController::class, 'store']);
@@ -73,22 +167,22 @@ Route::prefix('v1')->group(function () {
 
         // Knowledge Base & RAG
         Route::get('/knowledge/documents', [KnowledgeController::class, 'index']);
-        Route::post('/knowledge/documents', [KnowledgeController::class, 'store']);
+        Route::post('/knowledge/documents', [KnowledgeController::class, 'store'])->middleware('role:Admin,Manager');
         Route::get('/knowledge/documents/{document}', [KnowledgeController::class, 'show']);
-        Route::patch('/knowledge/documents/{document}', [KnowledgeController::class, 'update']);
-        Route::delete('/knowledge/documents/{document}', [KnowledgeController::class, 'destroy']);
-        Route::post('/knowledge/documents/{document}/reindex', [KnowledgeController::class, 'reindex']);
+        Route::patch('/knowledge/documents/{document}', [KnowledgeController::class, 'update'])->middleware('role:Admin,Manager');
+        Route::delete('/knowledge/documents/{document}', [KnowledgeController::class, 'destroy'])->middleware('role:Admin,Manager');
+        Route::post('/knowledge/documents/{document}/reindex', [KnowledgeController::class, 'reindex'])->middleware('role:Admin,Manager');
         Route::post('/knowledge/query', [KnowledgeController::class, 'semanticQuery']);
 
         // Agents
         Route::get('/agents', [AgentController::class, 'index']);
         Route::get('/agents/{agent}', [AgentController::class, 'show']);
-        Route::patch('/agents/{agent}', [AgentController::class, 'update']);
+        Route::patch('/agents/{agent}', [AgentController::class, 'update'])->middleware('role:Admin,Manager');
 
         // Integrations
         Route::get('/integrations', [IntegrationController::class, 'index']);
-        Route::post('/integrations/{provider}/connect', [IntegrationController::class, 'connect']);
-        Route::delete('/integrations/{integration}', [IntegrationController::class, 'disconnect']);
+        Route::post('/integrations/{provider}/connect', [IntegrationController::class, 'connect'])->middleware('role:Admin');
+        Route::delete('/integrations/{integration}', [IntegrationController::class, 'disconnect'])->middleware('role:Admin');
         Route::get('/integrations/{integration}/status', [IntegrationController::class, 'status']);
 
         // Analytics & Usage
@@ -123,6 +217,8 @@ Route::prefix('v1')->group(function () {
 
     // Public Dedicated Webhooks & Callback Endpoints
     Route::post('/woocommerce/webhook', [WooCommerceController::class, 'handleWebhook']);
+    Route::post('/webhooks/{organization}/woocommerce', [WooCommerceController::class, 'handleWebhook']);
     Route::post('/shopify/webhook', [ShopifyController::class, 'handleWebhook']);
+    Route::post('/webhooks/{organization}/shopify', [ShopifyController::class, 'handleWebhook']);
     Route::post('/webhooks/{provider}', [WebhookController::class, 'handle']);
 });

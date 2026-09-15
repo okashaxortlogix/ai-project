@@ -182,7 +182,7 @@ class ShopifyController extends Controller
      *
      * Validates X-Shopify-Hmac-Sha256 header against SHOPIFY_CLIENT_SECRET
      */
-    public function handleWebhook(Request $request)
+    public function handleWebhook(Request $request, ?string $organization = null)
     {
         $signature = $request->header('X-Shopify-Hmac-Sha256') ?? $request->header('x-shopify-hmac-sha256');
 
@@ -195,6 +195,28 @@ class ShopifyController extends Controller
         }
 
         $rawPayload = $request->getContent();
+
+        // Resolve organization context
+        $targetOrgId = $organization 
+            ?? $request->route('organization') 
+            ?? $request->route('organization_id') 
+            ?? $request->query('organization_id')
+            ?? $request->header('X-Organization-Id');
+
+        $resolvedOrgId = null;
+        if ($targetOrgId) {
+            $org = \App\Models\Organization::find($targetOrgId);
+            if (!$org) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Organization not found for webhook target.'
+                ], 404);
+            }
+            $resolvedOrgId = $org->id;
+        } else {
+            $resolvedOrgId = \App\Models\Organization::first()?->id;
+        }
+
         $secret = config('ecommerce.shopify.client_secret', env('SHOPIFY_CLIENT_SECRET', ''));
 
         // Compute Shopify HMAC SHA256 base64 signature
@@ -218,11 +240,31 @@ class ShopifyController extends Controller
             $payload = json_decode($rawPayload, true) ?? [];
         }
 
-        Log::info("Shopify Webhook Authenticated successfully. Topic: {$topic}");
+        Log::info("Shopify Webhook Authenticated successfully for Org [{$resolvedOrgId}]. Topic: {$topic}");
+
+        $payloadHash = hash('sha256', $rawPayload);
+        $orderId = $payload['id'] ?? null;
+
+        $webhookRecord = \App\Models\InboundWebhook::firstOrCreate(
+            [
+                'provider' => 'shopify', 
+                'payload_hash' => $payloadHash,
+                'organization_id' => $resolvedOrgId
+            ],
+            [
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'organization_id' => $resolvedOrgId,
+                'event_id' => (string) $orderId,
+                'event_type' => $topic,
+                'payload_json' => $payload,
+                'status' => 'pending'
+            ]
+        );
 
         // Auto-Deduct Logic: Listen for orders/create or payload with line_items
         if ($topic === 'orders/create' || isset($payload['line_items']) || str_contains($topic, 'order')) {
             $syncSummary = $this->handleShopifyOrderCreated($payload);
+            $webhookRecord->update(['status' => 'processed', 'processed_at' => now()]);
 
             return response()->json([
                 'success' => true,

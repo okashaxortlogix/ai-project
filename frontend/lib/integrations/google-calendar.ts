@@ -23,11 +23,9 @@ export class GoogleCalendarClient {
    */
   async testConnection(): Promise<{ connected: boolean; message: string; account?: string }> {
     if (!this.accessToken && !this.apiKey) {
-      // In sandbox/staging without live credentials, return verified sandbox credentials status
       return {
-        connected: true,
-        message: "Connected via OAuth2 Client (Sandbox Mode). Live sync active for primary calendar.",
-        account: "workspace-sync@acme.com"
+        connected: false,
+        message: "Google Calendar is not configured. Provide OAuth2 credentials or API key in Settings -> Integrations."
       };
     }
 
@@ -96,13 +94,7 @@ export class GoogleCalendarClient {
    */
   async createEvent(event: CalendarEventPayload): Promise<any> {
     if (!this.accessToken) {
-      return {
-        id: `gcal-evt-${Date.now()}`,
-        status: "confirmed",
-        htmlLink: "https://calendar.google.com/calendar/event?eid=mock123",
-        created: new Date().toISOString(),
-        summary: event.summary
-      };
+      throw new Error("Google Calendar integration is not authenticated. Please authorize via OAuth.");
     }
 
     const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {

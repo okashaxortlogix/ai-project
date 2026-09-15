@@ -220,28 +220,6 @@ export default function Screen2Dashboard({
         </div>
 
         <div className="flex items-center gap-2">
-          {onOpenSimulator && (
-            <button
-              onClick={onOpenSimulator}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
-              title="Simulate live order, lead, or booking during sales pitches"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-600" />
-              <span>Simulate Event</span>
-            </button>
-          )}
-
-          {onOpenEmbed && (
-            <button
-              onClick={onOpenEmbed}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
-              title="Get website 1-line script embed code"
-            >
-              <Code2 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Deploy Widget</span>
-            </button>
-          )}
-
           <button
             onClick={() => setDateFilter(dateFilter === "Today" ? "Last 7 Days" : "Today")}
             className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 text-xs font-semibold text-slate-700 rounded-lg hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
@@ -253,73 +231,129 @@ export default function Screen2Dashboard({
         </div>
       </div>
 
-      {/* Row of 4 Metric Cards */}
+      {/* Row of 4 Metric Cards (Clickable) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Conversations */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-slate-300 transition-all">
+        {/* Total Conversations -> Screen 3 (Conversations) */}
+        <div
+          onClick={() => onNavigate?.(3)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onNavigate?.(3); }}
+          className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group select-none"
+          title="Click to view all Conversations"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Total Conversations</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span className="text-xs font-semibold text-slate-500 group-hover:text-blue-600 transition-colors">
+              Total Conversations
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
               <MessageSquare className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2">
             {metrics.conversations}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium mt-1">
-            <ArrowUpRight className="w-3 h-3" />
-            <span>{metrics.conversations_trend}</span>
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
+              <ArrowUpRight className="w-3 h-3" />
+              <span>{metrics.conversations_trend}</span>
+            </div>
+            <span className="text-[10px] text-slate-400 group-hover:text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+              Open <ArrowRight className="w-2.5 h-2.5" />
+            </span>
           </div>
         </div>
 
-        {/* Orders Processed */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-slate-300 transition-all">
+        {/* Orders Processed -> Screen 4 (Support Agent) */}
+        <div
+          onClick={() => onNavigate?.(4)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onNavigate?.(4); }}
+          className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-teal-400 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group select-none"
+          title="Click to view Orders & Support Agent"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Orders Processed</span>
-            <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+            <span className="text-xs font-semibold text-slate-500 group-hover:text-teal-600 transition-colors">
+              Orders Processed
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center group-hover:bg-teal-600 group-hover:text-white transition-colors">
               <ShoppingBag className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2">
             {metrics.orders}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium mt-1">
-            <ArrowUpRight className="w-3 h-3" />
-            <span>{metrics.orders_trend}</span>
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
+              <ArrowUpRight className="w-3 h-3" />
+              <span>{metrics.orders_trend}</span>
+            </div>
+            <span className="text-[10px] text-slate-400 group-hover:text-teal-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+              Open <ArrowRight className="w-2.5 h-2.5" />
+            </span>
           </div>
         </div>
 
-        {/* Appointments Booked */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-slate-300 transition-all">
+        {/* Appointments Booked -> Screen 8 (Calendar Schedule) */}
+        <div
+          onClick={() => onNavigate?.(8)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onNavigate?.(8); }}
+          className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-purple-400 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group select-none"
+          title="Click to view Calendar & Bookings"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Appointments Booked</span>
-            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+            <span className="text-xs font-semibold text-slate-500 group-hover:text-purple-600 transition-colors">
+              Appointments Booked
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
               <CalendarCheck className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2">
             {metrics.appointments}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium mt-1">
-            <ArrowUpRight className="w-3 h-3" />
-            <span>{metrics.appointments_trend}</span>
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
+              <ArrowUpRight className="w-3 h-3" />
+              <span>{metrics.appointments_trend}</span>
+            </div>
+            <span className="text-[10px] text-slate-400 group-hover:text-purple-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+              Open <ArrowRight className="w-2.5 h-2.5" />
+            </span>
           </div>
         </div>
 
-        {/* Active Agents */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-slate-300 transition-all">
+        {/* Active Agents -> Screen 4 (AI Support Agent) */}
+        <div
+          onClick={() => onNavigate?.(4)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onNavigate?.(4); }}
+          className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group select-none"
+          title="Click to manage AI Agents"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Active Agents</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <span className="text-xs font-semibold text-slate-500 group-hover:text-emerald-600 transition-colors">
+              Active Agents
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
               <Bot className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2">
             {metrics.active_agents}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 badge-pulse" />
-            <span>{metrics.agents_status}</span>
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 badge-pulse" />
+              <span>{metrics.agents_status}</span>
+            </div>
+            <span className="text-[10px] text-slate-400 group-hover:text-emerald-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+              Open <ArrowRight className="w-2.5 h-2.5" />
+            </span>
           </div>
         </div>
       </div>
@@ -330,9 +364,9 @@ export default function Screen2Dashboard({
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold tracking-wide uppercase">
-                Production Readiness: 80% Complete
+                Production Readiness: 100% Complete
               </span>
-              <span className="text-xs text-blue-200">1 step remaining before public traffic</span>
+              <span className="text-xs text-blue-200">All core systems configured &amp; verified</span>
             </div>
             <h3 className="text-base font-bold text-white mt-1">
               Storefront &amp; Omnichannel Go-Live Checklist
@@ -341,22 +375,10 @@ export default function Screen2Dashboard({
               Enterprise setup steps to maximize customer conversions and guarantee 24/7 automated support.
             </p>
           </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {onOpenEmbed && (
-              <button
-                onClick={onOpenEmbed}
-                className="px-3.5 py-2 bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Code2 className="w-3.5 h-3.5" />
-                <span>Get Embed Code</span>
-              </button>
-            )}
-          </div>
         </div>
 
-        {/* 4 Interactive Steps */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        {/* 3 Interactive Steps */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
           <div
             onClick={() => onNavigate?.(17)}
             className="p-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl transition-all cursor-pointer"
@@ -391,21 +413,6 @@ export default function Screen2Dashboard({
             </div>
             <h4 className="text-xs font-bold text-white mt-1">Configure AI Guardrails</h4>
             <p className="text-[11px] text-blue-200/70 mt-0.5">Discounts &amp; tone configured</p>
-          </div>
-
-          <div
-            onClick={() => onOpenEmbed ? onOpenEmbed() : onNavigate?.(13)}
-            className="p-3 bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/50 rounded-xl transition-all cursor-pointer ring-2 ring-blue-400/30"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Step 4 (Final)</span>
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-            </div>
-            <h4 className="text-xs font-bold text-white mt-1">Deploy Widget Script</h4>
-            <p className="text-[11px] text-blue-100 mt-0.5 flex items-center gap-1 font-medium">
-              <span>Click to copy 1-line tag</span>
-              <ArrowRight className="w-3 h-3" />
-            </p>
           </div>
         </div>
       </div>

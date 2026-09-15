@@ -19,7 +19,11 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Kanban,
+  Workflow,
+  CheckSquare,
+  DollarSign
 } from "lucide-react";
 
 interface SidebarProps {
@@ -38,6 +42,10 @@ export default function Sidebar({
   const primaryNav = [
     { id: 2, label: "Home", icon: Home },
     { id: 3, label: "Conversations", icon: MessageSquare, badge: "6" },
+    { id: 18, label: "Pipelines & Deals", icon: Kanban, badge: "$105k" },
+    { id: 19, label: "Workflows", icon: Workflow, badge: "Auto" },
+    { id: 7, label: "Contacts & Leads", icon: Users },
+    { id: 20, label: "Tasks & Companies", icon: CheckSquare },
     { id: 4, label: "Support Agent", icon: Headphones },
     { id: 5, label: "Sales Agent", icon: TrendingUp },
     { id: 6, label: "Appointment Agent", icon: CalendarIcon },
@@ -48,7 +56,6 @@ export default function Sidebar({
   ];
 
   const operationsNav = [
-    { id: 7, label: "Leads CRM", icon: Users },
     { id: 8, label: "Calendar", icon: CalendarIcon },
     { id: 9, label: "Knowledge Base", icon: Database },
     { id: 10, label: "AI Assistant", icon: Sparkles },
