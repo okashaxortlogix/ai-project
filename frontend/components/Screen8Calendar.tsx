@@ -87,18 +87,17 @@ export default function Screen8Calendar({ isCompact = false }: Screen8CalendarPr
   const [appointments, setAppointments] = useState<any[]>([]);
   const [activeView, setActiveView] = useState<"Month" | "Week" | "Day">("Month");
 
-  // Initial base date set to Tuesday, April 29, 2025 so demo appointments are in direct view
-  const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 3, 29));
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2025, 3, 29));
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
 
   // New appointment form state
-  const [newTitle, setNewTitle] = useState("Product Onboarding");
-  const [newCustomer, setNewCustomer] = useState("Alex Morgan");
-  const [newDate, setNewDate] = useState("Apr 29, 2025");
-  const [newTime, setNewTime] = useState("3:00 PM - 3:30 PM");
+  const [newTitle, setNewTitle] = useState("");
+  const [newCustomer, setNewCustomer] = useState("");
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("03:00 PM - 03:30 PM");
 
   const loadAppointments = async () => {
     try {

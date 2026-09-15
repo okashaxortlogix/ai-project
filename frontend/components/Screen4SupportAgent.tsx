@@ -75,94 +75,22 @@ export default function Screen4SupportAgent({ onNavigate }: Screen4SupportAgentP
   // Conversation Sandbox state
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
-      id: "sup-1",
-      sender: "customer",
-      content: "Where is my order #12345?",
-      time: "10:14 AM"
-    },
-    {
-      id: "sup-2",
+      id: "welcome",
       sender: "agent",
-      content: "Let me check that for you! I found your order #12345. It's currently Out for Delivery and is expected to arrive tomorrow with FedEx Express tracking #FDX-994821.",
-      time: "10:15 AM",
-      toolUsed: "get_order_status"
-    },
-    {
-      id: "sup-3",
-      sender: "customer",
-      content: "Can I change the delivery address to my office?",
-      time: "10:17 AM"
-    },
-    {
-      id: "sup-4",
-      sender: "agent",
-      content: "Yes, you can certainly change your delivery address to your office! As long as the package has not left the regional carrier distribution hub, we can redirect it.\n\nPlease provide your office address (Company name, floor/suite, street, city, state & zip) and I will submit an immediate carrier reroute request.",
-      time: "10:18 AM"
+      content: "Hello! I'm your AI Support Copilot. How can I help you with order tracking, store products, returns, or support inquiries today?",
+      time: "Just now"
     }
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const [activeOrderContext, setActiveOrderContext] = useState<boolean>(true);
+  const [activeOrderContext, setActiveOrderContext] = useState<boolean>(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Inquiries History
-  const recentInquiries: InquiryRecord[] = [
-    {
-      id: "inq-1",
-      customer: "Sarah Ahmed",
-      email: "sarah@gmail.com",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80",
-      topic: "Order #12345 delivery tracking status",
-      channel: "Shopify Store",
-      time: "38s",
-      stars: "5.0",
-      status: "Autonomous",
-      summary: "AI looked up Shopify fulfillment via live webhook. Provided real-time tracking #FDX-994821 and scheduled delivery.",
-      resolutionTimeSec: 38
-    },
-    {
-      id: "inq-2",
-      customer: "Michael Vance",
-      email: "m.vance@tech.co",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
-      topic: "Return shipping label generation",
-      channel: "Live Web Chat",
-      time: "1m 14s",
-      stars: "5.0",
-      status: "Autonomous",
-      summary: "Validated 30-day return window eligibility and automatically generated a prepaid FedEx ground return label.",
-      resolutionTimeSec: 74
-    },
-    {
-      id: "inq-3",
-      customer: "Ali Raza",
-      email: "ali.raza@outlook.com",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
-      topic: "Delivery address update to office",
-      channel: "WhatsApp",
-      time: "45s",
-      stars: "4.8",
-      status: "Autonomous",
-      summary: "Customer requested office reroute before regional hub departure. Reroute dispatch payload transmitted.",
-      resolutionTimeSec: 45
-    },
-    {
-      id: "inq-4",
-      customer: "Emily Watson",
-      email: "emily.w@design.io",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
-      topic: "Headphone warranty coverage question",
-      channel: "Email Ticket",
-      time: "1m 02s",
-      stars: "5.0",
-      status: "Autonomous",
-      summary: "RAG ground knowledge search matched 2-year warranty documentation. Confirmed replacement eligibility.",
-      resolutionTimeSec: 62
-    }
-  ];
+  const recentInquiries: InquiryRecord[] = [];
 
   // Voice speech-to-text setup
   useEffect(() => {
@@ -419,7 +347,7 @@ export default function Screen4SupportAgent({ onNavigate }: Screen4SupportAgentP
               <div className="px-3.5 py-2 border-b border-slate-100 bg-white flex items-center gap-1.5 overflow-x-auto text-[11px]">
                 <span className="text-slate-400 font-medium shrink-0">Quick test:</span>
                 {[
-                  { label: "Track Order #12345", text: "Where is my order #12345?" },
+                  { label: "Track Order", text: "How can I track my order status?" },
                   { label: "Checkout Problem", text: "Can you tell me why is my order not getting placed?" },
                   { label: "Return Policy", text: "What is your 30-day return policy?" },
                   { label: "Change Address", text: "Can I change my delivery address to my office?" }
@@ -560,15 +488,15 @@ export default function Screen4SupportAgent({ onNavigate }: Screen4SupportAgentP
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Customer:</span>
-                  <span className="font-semibold text-slate-900">Sara Jenkins (sara@example.com)</span>
+                  <span className="font-semibold text-slate-600 italic">Guest Session (Live Chat)</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Channel:</span>
-                  <span className="font-semibold text-slate-800">Shopify Store Web Chat</span>
+                  <span className="font-semibold text-slate-800">Storefront Web Chat</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-500">Carrier Sync:</span>
-                  <span className="font-semibold text-blue-600">FedEx Express Ground</span>
+                  <span className="font-semibold text-slate-500">Auto-Detect Carrier</span>
                 </div>
               </div>
 
@@ -578,17 +506,8 @@ export default function Screen4SupportAgent({ onNavigate }: Screen4SupportAgentP
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                       <Truck className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Order #12345</span>
+                      <span>Order Details</span>
                     </div>
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                      Out for Delivery
-                    </span>
-                  </div>
-
-                  <div className="text-[11px] text-slate-600 space-y-1">
-                    <div>Tracking: <span className="font-mono font-semibold text-slate-800">FDX-994821</span></div>
-                    <div>Destination: <span className="font-semibold text-slate-800">Springfield, IL</span></div>
-                    <div>Expected: <span className="font-semibold text-slate-800">Tomorrow by 2:00 PM</span></div>
                   </div>
 
                   <button
@@ -607,23 +526,8 @@ export default function Screen4SupportAgent({ onNavigate }: Screen4SupportAgentP
                   <FileText className="w-3.5 h-3.5 text-slate-500" />
                   <span>Referenced Knowledge Sources</span>
                 </div>
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center justify-between">
-                    <span className="text-slate-700 font-medium truncate max-w-[190px]">
-                      Shipping_Delivery_Policy_2026.pdf
-                    </span>
-                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                      99% match
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center justify-between">
-                    <span className="text-slate-700 font-medium truncate max-w-[190px]">
-                      Return_Refund_SLA.docx
-                    </span>
-                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                      98% match
-                    </span>
-                  </div>
+                <div className="py-2 text-center text-slate-400 text-[11px]">
+                  No documents referenced yet. Query the AI to retrieve grounded knowledge.
                 </div>
               </div>
             </Card>
@@ -712,7 +616,14 @@ export default function Screen4SupportAgent({ onNavigate }: Screen4SupportAgentP
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {recentInquiries.map((row) => (
+                  {recentInquiries.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                        No customer support inquiries logged yet. Active sessions and tickets will appear here automatically.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentInquiries.map((row) => (
                     <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3">
                         <div className="flex items-center gap-2.5">
@@ -751,7 +662,7 @@ export default function Screen4SupportAgent({ onNavigate }: Screen4SupportAgentP
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>

@@ -59,14 +59,8 @@ export default function Screen5SalesAgent({
     {
       id: "ai-1",
       sender: "agent",
-      content: "Hi there! I'm your AI Sales Specialist. Looking for laptop recommendations, team hardware bundles, or discount pricing?",
-      time: "10:14 AM"
-    },
-    {
-      id: "usr-1",
-      sender: "customer",
-      content: "I need a fast laptop with all-day battery under $800.",
-      time: "10:15 AM"
+      content: "Hi there! I'm your AI Sales Specialist. How can I help you with product recommendations, custom quotes, or discounts today?",
+      time: "Just now"
     }
   ]);
   const [input, setInput] = useState("");

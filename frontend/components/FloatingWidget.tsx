@@ -29,7 +29,7 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  "Where is my order #12345?",
+  "How can I track my order status?",
   "Recommend a fast laptop under $1,000",
   "What bulk discounts do you offer?",
   "Book a consultation for tomorrow"

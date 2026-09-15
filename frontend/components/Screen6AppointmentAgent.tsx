@@ -53,37 +53,12 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
   const [configSaved, setConfigSaved] = useState(false);
 
   // Appointments List loaded from real database
-  const [appointments, setAppointments] = useState<AppointmentItem[]>([
-    {
-      id: "apt-1",
-      time: "10:00 AM",
-      customer: "Sarah Ahmed",
-      email: "sarah@gmail.com",
-      appointmentType: "Dental Cleaning",
-      status: "Confirmed"
-    },
-    {
-      id: "apt-2",
-      time: "11:30 AM",
-      customer: "Ali Raza",
-      email: "ali.raza@acme.com",
-      appointmentType: "Consultation",
-      status: "Confirmed"
-    },
-    {
-      id: "apt-3",
-      time: "02:00 PM",
-      customer: "Fatima Khan",
-      email: "fatima@acme.com",
-      appointmentType: "Follow-up",
-      status: "Confirmed"
-    }
-  ]);
+  const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
 
   const loadAppointments = async () => {
     try {
       const res = await api.getAppointments();
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.success && Array.isArray(res.data)) {
         setAppointments(
           res.data.map((a: any) => ({
             id: a.id || `apt-${Date.now()}`,
@@ -118,28 +93,10 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
   // Interactive Live Chat Sandbox
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
-      id: "m-1",
-      sender: "customer",
-      content: "Hi, I'd like to book an appointment for dental cleaning this week.",
-      time: "09:42 AM"
-    },
-    {
-      id: "m-2",
+      id: "welcome",
       sender: "agent",
-      content: "Hello Sarah! I'd be happy to schedule your Dental Cleaning. We have the following slots open tomorrow:\n• 10:00 AM\n• 11:30 AM\n• 02:00 PM\n\nWhich time works best for you?",
-      time: "09:43 AM"
-    },
-    {
-      id: "m-3",
-      sender: "customer",
-      content: "10:00 AM is great for me.",
-      time: "09:45 AM"
-    },
-    {
-      id: "m-4",
-      sender: "agent",
-      content: "Done! Your Dental Cleaning is confirmed for tomorrow at 10:00 AM. I've dispatched calendar invitations and an SMS confirmation.",
-      time: "09:45 AM"
+      content: "Hello! I'm your AI Appointment Scheduling Agent. What date and service would you like to schedule?",
+      time: "Just now"
     }
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -375,24 +332,30 @@ export default function Screen6AppointmentAgent({ onNavigate, isCompact = false 
                 </div>
 
                 <div className="space-y-3">
-                  {appointments.map((apt) => (
-                    <div
-                      key={apt.id}
-                      onClick={() => setSelectedAppointment(apt)}
-                      className="p-3 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-colors flex items-center justify-between cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md">
-                          {apt.time}
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-slate-900">{apt.appointmentType}</div>
-                          <div className="text-[11px] text-slate-500">{apt.customer}</div>
-                        </div>
-                      </div>
-                      <StatusBadge variant="active" label={apt.status} />
+                  {appointments.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                      No upcoming appointments yet. Scheduled bookings will appear here automatically.
                     </div>
-                  ))}
+                  ) : (
+                    appointments.map((apt) => (
+                      <div
+                        key={apt.id}
+                        onClick={() => setSelectedAppointment(apt)}
+                        className="p-3 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-colors flex items-center justify-between cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md">
+                            {apt.time}
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">{apt.appointmentType}</div>
+                            <div className="text-[11px] text-slate-500">{apt.customer}</div>
+                          </div>
+                        </div>
+                        <StatusBadge variant="active" label={apt.status} />
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
