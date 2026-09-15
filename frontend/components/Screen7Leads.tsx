@@ -113,29 +113,59 @@ export default function Screen7Leads({
     setSelectedLeadIds([]);
   };
 
-  const handleCreateLead = (e: React.FormEvent) => {
+  const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
 
-    const newL = {
-      id: `lead-${Date.now()}`,
-      name: newName,
-      email: newEmail,
-      phone: newPhone || "+1 (555) 000-0000",
-      company: newCompany,
-      source: newSource,
-      status: newStatus,
-      score: Number(newScore) || 75,
-      tags: ["Hot Lead", "Inbound"],
-      agent: "Sales Agent",
-      lastActivity: "Just now"
-    };
+    try {
+      const res = await api.createLead({
+        name: newName,
+        email: newEmail,
+        phone: newPhone || "",
+        company: newCompany,
+        source: newSource,
+        status: newStatus,
+        score: Number(newScore) || 75,
+      });
+      if (res && res.data) {
+        setLeads((prev) => [res.data, ...prev]);
+      } else {
+        await loadLeads();
+      }
+    } catch (err) {
+      console.error("Failed to create lead", err);
+      // Fallback local addition
+      const newL = {
+        id: `lead-${Date.now()}`,
+        name: newName,
+        email: newEmail,
+        phone: newPhone || "+1 (555) 000-0000",
+        company: newCompany,
+        source: newSource,
+        status: newStatus,
+        score: Number(newScore) || 75,
+        tags: ["Hot Lead", "Inbound"],
+        agent: "Sales Agent",
+        lastActivity: "Just now"
+      };
+      setLeads((prev) => [newL, ...prev]);
+    }
 
-    setLeads((prev) => [newL, ...prev]);
     setNewName("");
     setNewEmail("");
     setNewPhone("");
     setIsAddLeadModalOpen(false);
+  };
+
+  const handleDeleteLead = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this contact?")) return;
+    try {
+      await api.deleteLead(id);
+    } catch (err) {
+      console.error("Failed to delete lead from API", err);
+    }
+    setLeads((prev) => prev.filter((l) => l.id !== id));
   };
 
   const handleExport = () => {
@@ -403,17 +433,27 @@ export default function Screen7Leads({
                         />
                       </td>
                       <td className="p-3.5 pr-4 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs text-blue-600 hover:bg-blue-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpen360(l);
-                          }}
-                        >
-                          Contact 360 <ArrowRight className="w-3 h-3 ml-1" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs text-blue-600 hover:bg-blue-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpen360(l);
+                            }}
+                          >
+                            Contact 360 <ArrowRight className="w-3 h-3 ml-1" />
+                          </Button>
+                          <button
+                            type="button"
+                            title="Delete contact"
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            onClick={(e) => handleDeleteLead(l.id, e)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

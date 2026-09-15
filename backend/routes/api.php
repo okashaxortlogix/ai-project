@@ -92,7 +92,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/contacts/merge', [ContactController::class, 'merge']);
         Route::get('/contacts/{contact}', [ContactController::class, 'show']);
         Route::patch('/contacts/{contact}', [ContactController::class, 'update']);
-        Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->middleware('role:Admin,Manager');
+        Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']);
+
+        // Leads aliases
+        Route::get('/leads', [ContactController::class, 'index']);
+        Route::post('/leads', [ContactController::class, 'store']);
+        Route::get('/leads/{contact}', [ContactController::class, 'show']);
+        Route::patch('/leads/{contact}', [ContactController::class, 'update']);
+        Route::delete('/leads/{contact}', [ContactController::class, 'destroy']);
 
         // Smart Lists (GHL Dynamic Segmentation Engine)
         Route::get('/smart-lists', [SmartListController::class, 'index']);

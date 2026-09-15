@@ -220,6 +220,12 @@ export const api = {
     });
   },
 
+  async deleteLead(id: string) {
+    return safeRequest(`${API_BASE}/leads/${id}`, {
+      method: "DELETE"
+    });
+  },
+
   // Appointments
   async getAppointments() {
     return safeRequest(`${API_BASE}/appointments`);
