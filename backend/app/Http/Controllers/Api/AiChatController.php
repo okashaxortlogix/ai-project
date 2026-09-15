@@ -25,11 +25,15 @@ class AiChatController extends Controller
                 $orgId = $user->organization_id;
             } else {
                 $firstOrg = \App\Models\Organization::first();
-                if ($firstOrg) {
-                    $orgId = $firstOrg->id;
-                } else {
-                    return response()->json(['success' => false, 'message' => 'Valid organization context required.'], 400);
+                if (!$firstOrg) {
+                    $firstOrg = \App\Models\Organization::create([
+                        'name' => 'Acme Corporation',
+                        'slug' => 'acme-corp',
+                        'timezone' => 'UTC',
+                        'status' => 'active',
+                    ]);
                 }
+                $orgId = $firstOrg->id;
             }
         }
 
