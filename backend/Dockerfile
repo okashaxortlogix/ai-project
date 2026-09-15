@@ -27,9 +27,14 @@ COPY . /app
 # Install composer dependencies
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-# Set permissions for storage & cache
-RUN chown -R www-data:www-data /app \
-    && chmod -R 775 /app/storage /app/bootstrap/cache 2>/dev/null || true
+# Create essential directories and set full permissions for storage & cache
+RUN mkdir -p /app/bootstrap/cache \
+    /app/storage/framework/cache \
+    /app/storage/framework/sessions \
+    /app/storage/framework/views \
+    /app/storage/logs \
+    && chown -R www-data:www-data /app \
+    && chmod -R 777 /app/storage /app/bootstrap/cache
 
 # Render provides PORT environment variable (typically 10000)
 ENV PORT=10000
